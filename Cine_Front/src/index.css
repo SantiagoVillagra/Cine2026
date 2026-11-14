@@ -1,0 +1,73 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-background: #111315;
+  --color-surface: #1c2024;
+  --color-surface-secondary: #292e33;
+  --color-primary: #d83a3a;
+  --color-primary-hover: #b92d2d;
+  --color-text-primary: #f4f1ed;
+  --color-text-secondary: #92999f;
+  --color-border: #343a40;
+
+  --color-success: #3b9b70;
+  --color-warning: #d9a441;
+  --color-danger: #d83a3a;
+  --color-info: #4d91c7;
+
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  html {
+    min-width: 320px;
+    background-color: var(--color-background);
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: var(--color-primary);
+    color: var(--color-text-primary);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button {
+    color: inherit;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
