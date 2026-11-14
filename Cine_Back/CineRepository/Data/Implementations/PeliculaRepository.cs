@@ -17,6 +17,19 @@ namespace CineRepository.Data.Implementations
         {
             _context = context;
         }
+
+        public async Task ActualizarAsync(Pelicula pelicula)
+        {
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<Pelicula>> GetActivasAsync()
+        {
+            return await _context.Peliculas
+                                .Where(p => p.Activa)
+                                .ToListAsync();
+        }
+
         public async Task<List<Pelicula>> GetAllAsync()
         {
             return await _context.Peliculas

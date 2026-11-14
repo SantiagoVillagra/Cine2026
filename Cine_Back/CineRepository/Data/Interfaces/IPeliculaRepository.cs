@@ -11,5 +11,9 @@ namespace CineRepository.Data.Interfaces
     {
         Task<List<Pelicula>> GetAllAsync();
         Task<Pelicula?> GetByIdAsync(int id);
+
+        Task ActualizarAsync(Pelicula pelicula);
+
+        Task<List<Pelicula>> GetActivasAsync();
     }
 }

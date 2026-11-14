@@ -9,7 +9,9 @@ namespace CineRepository.Services.Interfaces
 {
     public interface IPeliculaService
     {
-        Task<List<Pelicula>> ObtenerTodasAsyc();
+        Task<List<Pelicula>> ObtenerTodasAsync();
         Task<Pelicula?> ObtenerPorIdAsync(int id);
+        Task<List<Pelicula>> ObtenerActivasAsync();
+        Task CambiarEstadoAsync(int id, bool activa);
     }
 }
