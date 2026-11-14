@@ -9,6 +9,6 @@ namespace CineRepository.Data.Interfaces
 {
     public interface IReservaRepository
     {
-        Task<bool> PostReserva(List<PostReservaDto> detalles);
+        Task<bool> PostReserva(PostReservaDto detalles);
     }
 }

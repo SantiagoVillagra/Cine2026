@@ -8,8 +8,6 @@ namespace CineRepository.DTOs
 {
     public class PostReservaDto
     {
-        public int IdFuncion { get; set; }
-        public int IdButaca { get; set; }
-        public int IdTipoEntrada { get; set; }
+        public List<DetalleReservaDto> Detalles { get; set; }
     }
 }
