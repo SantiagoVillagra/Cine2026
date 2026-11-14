@@ -39,6 +39,10 @@ namespace CineRepository.Domain
         [Column("sinopsis", TypeName = "varchar(MAX)")]
         public string? Sinopsis { get; set; }
 
+        [Required]
+        [Column("activa", TypeName = "bit")]
+        public bool Activa { get; set; } = true;
+
         [ForeignKey(nameof(IdClasificacion))]
         [JsonIgnore]
         public virtual Clasificacion? Clasificacion { get; set; }
