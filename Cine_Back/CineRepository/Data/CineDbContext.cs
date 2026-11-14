@@ -46,8 +46,6 @@ namespace CineRepository.Data
         public DbSet<Factura> Facturas { get; set; } = null!;
         public DbSet<DetalleFactura> DetallesFacturas { get; set; } = null!;
 
-        public DbSet<OcupacionButaca> OcupacionesButacas { get; set; }
-
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -257,30 +255,6 @@ namespace CineRepository.Data
                 .HasForeignKey(df => df.IdTipoEntrada)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<OcupacionButaca>()
-                .HasKey(o => new { o.IdFuncion, o.IdButaca });
-
-            modelBuilder.Entity<OcupacionButaca>()
-                .HasOne(o => o.Funcion)
-                .WithMany()
-                .HasForeignKey(o => o.IdFuncion);
-
-            modelBuilder.Entity<OcupacionButaca>()
-                .HasOne(o => o.Butaca)
-                .WithMany()
-                .HasForeignKey(o => o.IdButaca);
-
-            modelBuilder.Entity<OcupacionButaca>()
-                .HasOne(o => o.DetalleReserva)
-                .WithMany()
-                .HasForeignKey(o => o.IdDetalleReserva)
-                .IsRequired(false);
-
-            modelBuilder.Entity<OcupacionButaca>()
-                .HasOne(o => o.DetalleFactura)
-                .WithMany()
-                .HasForeignKey(o => o.IdDetalleFactura)
-                .IsRequired(false);
 
             base.OnModelCreating(modelBuilder);
         }
