@@ -17,8 +17,8 @@ namespace CineWebAPI.Controllers
             _peliculaService = peliculaService;
         }
 
-        [AllowAnonymous]
-        //[Authorize]
+        //[AllowAnonymous]
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -34,9 +34,8 @@ namespace CineWebAPI.Controllers
             }
         }
 
-        //[Authorize(Roles = "Admin")]
-        [Authorize]
-        [HttpGet("{id:int}")]
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
         public async Task<IActionResult> GetById(int id)
         {
             try
