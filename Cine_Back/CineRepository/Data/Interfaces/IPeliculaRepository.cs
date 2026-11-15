@@ -15,5 +15,11 @@ namespace CineRepository.Data.Interfaces
         Task ActualizarAsync(Pelicula pelicula);
 
         Task<List<Pelicula>> GetActivasAsync();
+
+        Task<Pelicula> CrearAsync(Pelicula pelicula);
+        Task<bool> ExisteClasificacionAsync(int idClasificacion);
+        Task<bool> ExisteDirectorAsync(int idDirector);
+        Task<List<int>> ObtenerIdsGenerosExistentesAsync(List<int> idsGeneros);
+        Task<List<int>> ObtenerIdsActoresExistentesAsync(List<int> idsActores);
     }
 }
