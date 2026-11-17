@@ -7,6 +7,7 @@ import PublicLayout from '../layouts/PublicLayout.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import HomePage from '../pages/public/HomePage.jsx';
 import MovieDetailPage from '../pages/public/MovieDetailPage.jsx';
+import SeatSelectionPage from '../pages/client/SeatSelectionPage.jsx';
 
 const routes = [
   {
@@ -32,7 +33,7 @@ const routes = [
           { path: '/cliente/reservas', element: <PlaceholderPage title='Mis reservas' /> },
           {
             path: '/cliente/reservar/:funcionId',
-            element: <PlaceholderPage title='Reserva de función' />,
+            element: <SeatSelectionPage />,
           },
           {
             path: '/cliente/mis-compras',
@@ -92,3 +93,4 @@ if (import.meta.env.DEV) {
 }
 
 export const router = createBrowserRouter(routes)
+
