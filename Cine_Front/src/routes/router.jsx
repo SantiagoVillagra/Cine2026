@@ -6,6 +6,7 @@ import ClientLayout from '../layouts/ClientLayout.jsx';
 import PublicLayout from '../layouts/PublicLayout.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import HomePage from '../pages/public/HomePage.jsx';
+import MovieDetailPage from '../pages/public/MovieDetailPage.jsx';
 
 const routes = [
   {
@@ -14,7 +15,7 @@ const routes = [
       { path: '/', element: <HomePage /> },
       {
         path: '/pelicula/:id',
-        element: <PlaceholderPage title='Detalle de película' />,
+        element: <MovieDetailPage />,
       },
     ],
   },
