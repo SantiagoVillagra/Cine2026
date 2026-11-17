@@ -7,6 +7,7 @@ import PublicLayout from '../layouts/PublicLayout.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import HomePage from '../pages/public/HomePage.jsx';
 import MovieDetailPage from '../pages/public/MovieDetailPage.jsx';
+import DashboardPage from '../pages/admin/DashboardPage.jsx';
 
 const routes = [
   {
@@ -50,7 +51,7 @@ const routes = [
         children: [
           {
             path: '/admin/dashboard',
-            element: <PlaceholderPage title='Dashboard' />,
+            element: <DashboardPage />,
           },
           {
             path: '/admin/peliculas',
