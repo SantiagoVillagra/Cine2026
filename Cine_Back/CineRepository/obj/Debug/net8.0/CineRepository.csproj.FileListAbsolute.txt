@@ -1,0 +1,16 @@
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\CineRepository.csproj.AssemblyReference.cache
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\CineRepository.GeneratedMSBuildEditorConfig.editorconfig
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\CineRepository.AssemblyInfoInputs.cache
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\CineRepository.AssemblyInfo.cs
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\CineRepository.csproj.CoreCompileInputs.cache
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\CineRepository.sourcelink.json
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\bin\Debug\net8.0\CineRepository.deps.json
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\bin\Debug\net8.0\CineRepository.runtimeconfig.json
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\bin\Debug\net8.0\CineRepository.dll
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\bin\Debug\net8.0\CineRepository.pdb
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\CineRepository.dll
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\refint\CineRepository.dll
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\CineRepository.pdb
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\CineRepository.genruntimeconfig.cache
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\ref\CineRepository.dll
+C:\PROYECTO UTN\CineProgra\Cine2026\Cine_Back\CineRepository\obj\Debug\net8.0\CineRepo.A7EE5668.Up2Date
