@@ -10,8 +10,8 @@ namespace CineRepository.Data.Interfaces
 {
     public interface IFacturaRepository
     {
-        Task<Factura?> PostVentaDirectaAsync(Factura factura);
-        Task<Factura?> PostVentaPorReservaAsync(Factura factura);
+        Task PostVentaDirectaAsync(Factura factura);
+        Task PostVentaPorReservaAsync(Factura factura);
         Task<Factura?> GetByIdAsync(int idFactura);
     }
 }

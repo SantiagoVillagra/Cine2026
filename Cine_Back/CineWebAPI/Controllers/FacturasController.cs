@@ -20,7 +20,7 @@ namespace CineWebAPI.Controllers
 
         // POST: api/facturas
         // Registra una venta directa desde boletería.
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> CrearVentaDirecta([FromBody] PostFacturaDto facturaDto)
         {

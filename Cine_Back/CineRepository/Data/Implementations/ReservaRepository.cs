@@ -18,17 +18,7 @@ namespace CineRepository.Data.Implementations
         {
             _context = context;
         }
-
-        public async Task<bool> CancelAsync(int idReserva, int idCliente, bool esAdmin)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<Factura> ConfirmAsync(int idReserva, int idCliente, bool esAdmin, ConfirmarReservaDto dto)
-        {
-            throw new NotImplementedException();
-        }
-
+                
         public async Task<Reserva?> GetByIdAsync(int idReserva)
         {
             return await _context.Reservas
@@ -49,10 +39,60 @@ namespace CineRepository.Data.Implementations
             return await _context.Reservas.ToListAsync();
         }
 
-        public async Task<Reserva> PostReservaAsync(Reserva reserva)
+        public async Task PostReservaAsync(Reserva reserva)
         {
             await _context.Reservas.AddAsync(reserva);
-            return reserva; //Corregir, obtenemos el ultimo insert o mandamos un bool?
+        }
+
+        public async Task<bool> DeleteByReservaAsync(int idReserva)
+        {
+            var ocupaciones = await _context.OcupacionesButacas
+                                            .Include(o => o.DetalleReserva)
+                                            .Where(o =>
+                                                o.IdDetalleReserva != null &&
+                                                o.DetalleReserva != null &&
+                                                o.DetalleReserva.IdReserva == idReserva
+                                            )
+                                            .ToListAsync();
+
+            if (!ocupaciones.Any())
+                return false;
+
+            _context.OcupacionesButacas.RemoveRange(ocupaciones);
+
+            return true;
+        }
+
+        public async Task UpdateOcupWithFacturaAsync(int? idReserva, List<DetalleFactura>? detalles)
+        {
+            var ocupaciones = await _context.OcupacionesButacas
+                .Include(o => o.DetalleReserva)
+                .Where(o =>
+                    o.IdDetalleReserva != null &&
+                    o.DetalleReserva != null &&
+                    o.DetalleReserva.IdReserva == idReserva
+                )
+                .ToListAsync();
+
+            foreach (var ocupacion in ocupaciones)
+            {
+                var detalleFactura = _context.DetallesFacturas.FirstOrDefault(df =>
+                    df.IdFuncion == ocupacion.IdFuncion &&
+                    df.IdButaca == ocupacion.IdButaca
+                );
+
+                if (detalleFactura != null)
+                {
+                    ocupacion.IdDetalleFactura = detalleFactura.IdDetalleFactura;
+                }
+            }
+
+            _context.OcupacionesButacas.UpdateRange(ocupaciones);
+        }
+
+        public async Task PostOcupByReservaAsync(List<OcupacionButaca> ocupaciones)
+        {
+            await _context.OcupacionesButacas.AddRangeAsync(ocupaciones);
         }
     }
 }

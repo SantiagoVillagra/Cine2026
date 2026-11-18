@@ -90,7 +90,10 @@ namespace CineWebAPI.Controllers
 
             bool esAdmin = User.IsInRole("Admin");
 
-            await _reservaService.CancelarAsync(id,idCliente,esAdmin);
+            bool cancelado = await _reservaService.CancelarAsync(id,idCliente,esAdmin);
+
+            if (cancelado)
+                return Ok("Reserva cancelada");
 
             return NoContent();
         }

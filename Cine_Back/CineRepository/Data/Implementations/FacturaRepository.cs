@@ -26,16 +26,14 @@ namespace CineRepository.Data.Implementations
                 .FirstOrDefaultAsync(f => f.IdFactura == idFactura);
         }
 
-        public async Task<Factura?> PostVentaDirectaAsync(Factura factura)
+        public async Task PostVentaDirectaAsync(Factura factura)
         {
             await _context.Facturas.AddAsync(factura);
-            throw new NotImplementedException();
         }
 
-        public async Task<Factura?> PostVentaPorReservaAsync(Factura factura)
+        public async Task PostVentaPorReservaAsync(Factura factura)
         {
             await _context.Facturas.AddAsync(factura);
-            throw new NotImplementedException();
         }
     }
 }
