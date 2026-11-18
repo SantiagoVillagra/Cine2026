@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { getAsyncState } from './asyncState.js'
 import {
+  buildShowtimeParams,
   formatShowtimeDate,
   formatShowtimeTime,
   getActiveMovies,
@@ -67,4 +68,11 @@ test('vistas de datos distinguen carga, error, vacío y éxito', () => {
   assert.equal(getAsyncState({ isLoading: false, error: new Error('falló'), data: null }), 'error')
   assert.equal(getAsyncState({ isLoading: false, data: [] }), 'empty')
   assert.equal(getAsyncState({ isLoading: false, data: [{ id: 1 }] }), 'success')
+})
+
+test('construye filtros de funciones solo con los parÃ¡metros documentados', () => {
+  assert.equal(buildShowtimeParams(), undefined)
+  assert.deepEqual(buildShowtimeParams({ fecha: '2026-11-20' }), { fecha: '2026-11-20' })
+  assert.deepEqual(buildShowtimeParams({ movieId: 12 }), { idPelicula: 12 })
+  assert.deepEqual(buildShowtimeParams({ fecha: '2026-11-20', movieId: 12 }), { fecha: '2026-11-20', idPelicula: 12 })
 })

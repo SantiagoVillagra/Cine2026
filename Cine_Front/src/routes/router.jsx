@@ -8,6 +8,10 @@ import ProtectedRoute from './ProtectedRoute.jsx';
 import HomePage from '../pages/public/HomePage.jsx';
 import MovieDetailPage from '../pages/public/MovieDetailPage.jsx';
 import DashboardPage from '../pages/admin/DashboardPage.jsx';
+import MoviesPage from '../pages/admin/MoviesPage.jsx';
+import NewMoviePage from '../pages/admin/NewMoviePage.jsx';
+import ShowtimesPage from '../pages/admin/ShowtimesPage.jsx';
+import NewShowtimePage from '../pages/admin/NewShowtimePage.jsx';
 import LoginPage from '../pages/auth/LoginPage.jsx';
 import SeatSelectionPage from '../pages/client/SeatSelectionPage.jsx';
 
@@ -57,19 +61,19 @@ const routes = [
           },
           {
             path: '/admin/peliculas',
-            element: <PlaceholderPage title='Películas' />,
+            element: <MoviesPage />,
           },
           {
             path: '/admin/peliculas/nueva',
-            element: <PlaceholderPage title='Nueva película' />,
+            element: <NewMoviePage />,
           },
           {
             path: '/admin/funciones',
-            element: <PlaceholderPage title='Funciones' />,
+            element: <ShowtimesPage />,
           },
           {
             path: '/admin/funciones/nueva',
-            element: <PlaceholderPage title='Nueva función' />,
+            element: <NewShowtimePage />,
           },
         ],
       },

@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient.js'
+import { buildShowtimeParams } from '../utils/publicCatalog.js'
 
 export async function getMovies({ signal } = {}) {
   const { data } = await apiClient.get('/api/peliculas', { signal })
@@ -10,8 +11,8 @@ export async function getMovieById(id, { signal } = {}) {
   return data
 }
 
-export async function getShowtimes({ movieId, signal } = {}) {
-  const params = movieId === undefined ? undefined : { idPelicula: movieId }
+export async function getShowtimes({ movieId, fecha, signal } = {}) {
+  const params = buildShowtimeParams({ movieId, fecha })
   const { data } = await apiClient.get('/api/funciones', { params, signal })
   return data
 }

@@ -33,6 +33,14 @@ export function mapShowtimes(showtimes) {
   return Array.isArray(showtimes) ? showtimes.map(mapShowtime) : []
 }
 
+export function buildShowtimeParams({ movieId, fecha } = {}) {
+  const params = {
+    ...(fecha ? { fecha } : {}),
+    ...(movieId === undefined ? {} : { idPelicula: movieId }),
+  }
+  return Object.keys(params).length ? params : undefined
+}
+
 export function formatShowtimeDate(value) {
   if (typeof value !== 'string') return ''
   const datePart = value.slice(0, 10)
