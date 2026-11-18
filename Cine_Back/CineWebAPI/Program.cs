@@ -58,6 +58,9 @@ builder.Services.AddScoped<IPeliculaService, PeliculaService>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 
+builder.Services.AddScoped<IFuncionRepository, FuncionRepository>();
+builder.Services.AddScoped<IFuncionService, FuncionService>();
+
 
 //CONFIRGURACION JWT COMPIADO DE LO QUE SUBIÓ EL PROFE
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
