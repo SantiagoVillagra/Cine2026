@@ -61,6 +61,9 @@ builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IFuncionRepository, FuncionRepository>();
 builder.Services.AddScoped<IFuncionService, FuncionService>();
 
+builder.Services.AddScoped<IEstadisticaRepository, EstadisticaRepository>();
+builder.Services.AddScoped<IEstadisticaService, EstadisticaService>();
+
 
 //CONFIRGURACION JWT COMPIADO DE LO QUE SUBIÓ EL PROFE
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
