@@ -24,7 +24,7 @@ namespace CineWebAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var reservas = await _reservaService.GetAllAsync();
+            var reservas = await _reservaService.TraerTodasAsync();
 
             return Ok(reservas);
         }
@@ -38,7 +38,7 @@ namespace CineWebAPI.Controllers
             if (!TryGetIdCliente(out int idCliente))
                 return Unauthorized();
 
-            var reservas = await _reservaService.GetMisReservasAsync(idCliente);
+            var reservas = await _reservaService.TraerMisReservasAsync(idCliente);
 
             return Ok(reservas);
         }
@@ -54,7 +54,7 @@ namespace CineWebAPI.Controllers
 
             bool esAdmin = User.IsInRole("Admin");
 
-            var reserva = await _reservaService.GetByIdAsync(id, idCliente, esAdmin);
+            var reserva = await _reservaService.TraerPorIdAsync(id, idCliente, esAdmin);
 
             if (reserva == null)
                 return NotFound(new
@@ -74,13 +74,9 @@ namespace CineWebAPI.Controllers
             if (!TryGetIdCliente(out int idCliente))
                 return Unauthorized();
 
-            var reserva = await _reservaService.CrearAsync(idCliente, reservaDto);
+            var reserva = await _reservaService.CrearReservaAsync(idCliente, reservaDto);
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = reserva.IdReserva },
-                reserva
-            );
+            return CreatedAtAction(nameof(GetById),new { id = reserva.IdReserva },reserva);
         }
 
         // PATCH: api/reservas/15/cancelar
@@ -94,11 +90,7 @@ namespace CineWebAPI.Controllers
 
             bool esAdmin = User.IsInRole("Admin");
 
-            await _reservaService.CancelarAsync(
-                id,
-                idCliente,
-                esAdmin
-            );
+            await _reservaService.CancelarAsync(id,idCliente,esAdmin);
 
             return NoContent();
         }
@@ -116,12 +108,7 @@ namespace CineWebAPI.Controllers
 
             bool esAdmin = User.IsInRole("Admin");
 
-            var factura = await _reservaService.ConfirmarAsync(
-                id,
-                idCliente,
-                esAdmin,
-                confirmacionDto
-            );
+            var factura = await _reservaService.ConfirmarAsync(id,idCliente,esAdmin,confirmacionDto);
 
             return Ok(factura);
         }

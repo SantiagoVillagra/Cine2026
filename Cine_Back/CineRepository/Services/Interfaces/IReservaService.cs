@@ -1,4 +1,5 @@
-﻿using CineRepository.DTOs;
+﻿using CineRepository.Domain;
+using CineRepository.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,11 @@ namespace CineRepository.Services.Interfaces
 {
     public interface IReservaService
     {
-        Task<bool> CrearReserva(PostReservaDto detalles);
+        Task<Reserva> CrearReservaAsync(int idCliente, PostReservaDto detalles);
+        Task<List<Reserva>> TraerTodasAsync();
+        Task<List<Reserva>> TraerMisReservasAsync(int idCliente);
+        Task<Reserva?> TraerPorIdAsync(int idReserva,int idCliente,bool esAdmin);
+        Task<bool> CancelarAsync(int idReserva,int idCliente,bool esAdmin);
+        Task<Factura> ConfirmarAsync(int idReserva,int idCliente,bool esAdmin,ConfirmarReservaDto dto);
     }
 }

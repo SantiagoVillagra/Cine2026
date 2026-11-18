@@ -1,4 +1,5 @@
-﻿using CineRepository.Services.Interfaces;
+﻿using CineRepository.DTOs;
+using CineRepository.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,16 +22,11 @@ namespace CineWebAPI.Controllers
         // Registra una venta directa desde boletería.
         [Authorize(Roles = "Admin")]
         [HttpPost]
-        public async Task<IActionResult> CrearVentaDirecta(
-            [FromBody] CrearFacturaDto facturaDto)
+        public async Task<IActionResult> CrearVentaDirecta([FromBody] PostFacturaDto facturaDto)
         {
             var factura = await _facturaService.CrearVentaDirectaAsync(facturaDto);
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = factura.IdFactura },
-                factura
-            );
+            return CreatedAtAction(nameof(GetById), new { id = factura.IdFactura }, factura);
         }
 
         // GET: api/facturas/20
@@ -44,7 +40,7 @@ namespace CineWebAPI.Controllers
 
             bool esAdmin = User.IsInRole("Admin");
 
-            var factura = await _facturaService.GetByIdAsync(id, idCliente, esAdmin);
+            var factura = await _facturaService.TraerPorIdAsync(id, idCliente, esAdmin);
 
             if (factura == null)
                 return NotFound(new

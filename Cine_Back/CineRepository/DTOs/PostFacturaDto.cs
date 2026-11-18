@@ -11,6 +11,6 @@ namespace CineRepository.DTOs
         public int IdCliente { get; set; }
         public int IdFormaPago { get; set; }
         public int IdCanalVenta { get; set; }
-        public List<PostReservaDto> Detalles { get; set; }
+        public List<DetalleReservaDto> Detalles { get; set; }
     }
 }

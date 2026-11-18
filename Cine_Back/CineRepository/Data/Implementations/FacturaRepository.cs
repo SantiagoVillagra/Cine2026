@@ -1,5 +1,7 @@
 ﻿using CineRepository.Data.Interfaces;
+using CineRepository.Domain;
 using CineRepository.DTOs;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,8 +18,23 @@ namespace CineRepository.Data.Implementations
         {
             _context = context;
         }
-        public Task<bool> PostFactura(PostFacturaDto factura)
+
+        public async Task<Factura?> GetByIdAsync(int idFactura)
         {
+            return await _context.Facturas
+                .Include(f => f.DetallesFacturas)
+                .FirstOrDefaultAsync(f => f.IdFactura == idFactura);
+        }
+
+        public async Task<Factura?> PostVentaDirectaAsync(Factura factura)
+        {
+            await _context.Facturas.AddAsync(factura);
+            throw new NotImplementedException();
+        }
+
+        public async Task<Factura?> PostVentaPorReservaAsync(Factura factura)
+        {
+            await _context.Facturas.AddAsync(factura);
             throw new NotImplementedException();
         }
     }
