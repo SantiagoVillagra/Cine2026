@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace CineRepository.DTOs
 {
-    public class PostReservaDto
+    public class ButacaFuncionDto
     {
-        public int IdFuncion { get; set; }
         public int IdButaca { get; set; }
-        public int IdTipoEntrada { get; set; }
+        public string Fila { get; set; } = string.Empty;
+        public int Numero { get; set; }
+        public bool Ocupada { get; set; }
     }
 }
