@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
 import { Clapperboard } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button, Card, Input, PageHeader } from '../../components/common/index.js'
 import { InvalidCredentialsError } from '../../utils/InvalidCredentialsError.js'
+import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
+import { useAuth } from '../../hooks/useAuth.js'
 
 const localPartPattern = /^[A-Za-z0-9_%+-]+(?:\.[A-Za-z0-9_%+-]+)*$/
 const domainLabelPattern = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/
@@ -46,13 +48,20 @@ function isValidEmail(email) {
  * Its implementation owns session updates and navigation. It should reject with
  * InvalidCredentialsError for credential rejection and another error otherwise.
  */
-function LoginPage({ onAuthenticate }) {
+function LoginPage() {
+  const { authenticate, isAuthenticated, user } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [values, setValues] = useState({ email: '', password: '' })
   const [errors, setErrors] = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState(null)
   const submissionLock = useRef(false)
+
+  if (isAuthenticated) {
+    return <Navigate to={user.role === 'Admin' ? '/admin/dashboard' : '/cliente/reservas'} replace />
+  }
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -79,28 +88,21 @@ function LoginPage({ onAuthenticate }) {
 
     if (Object.keys(validationErrors).length > 0) return
 
-    if (typeof onAuthenticate !== 'function') {
-      setFormError({
-        type: 'general',
-        message: 'El inicio de sesión todavía no está conectado al servicio de autenticación.',
-      })
-      return
-    }
-
     submissionLock.current = true
     setIsSubmitting(true)
 
     try {
-      // onAuthenticate resuelve cuando actualizó la sesión y gestionó la navegación.
-      // Recibe credenciales de la interfaz; su implementación adapta el request al contrato confirmado.
-      await onAuthenticate({ email: values.email.trim(), password: values.password })
+      const authenticatedUser = await authenticate({ email: values.email.trim(), password: values.password })
+      const requestedPath = location.state?.from
+      const defaultPath = authenticatedUser.role === 'Admin' ? '/admin/dashboard' : '/cliente/reservas'
+      navigate(requestedPath || defaultPath, { replace: true })
     } catch (error) {
       const isAuthenticationError = error instanceof InvalidCredentialsError
       setFormError({
         type: isAuthenticationError ? 'authentication' : 'general',
         message: isAuthenticationError
           ? 'No pudimos validar esas credenciales. Revisalas e intentá nuevamente.'
-          : 'No se pudo completar el inicio de sesión. Intentá nuevamente.',
+          : getApiErrorMessage(error, 'No se pudo completar el inicio de sesión. Intentá nuevamente.'),
       })
     } finally {
       submissionLock.current = false

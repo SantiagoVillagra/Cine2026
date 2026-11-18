@@ -1,536 +1,489 @@
-# Database – BDI_TP_DbCine
+# Base de datos – Cine 2026
 
 ## 1. Información general
 
-Base de datos: `BDI_TP_DbCine`  
-Motor: Microsoft SQL Server  
-Cantidad de tablas: 24
+- **Base de datos:** `cine_proyecto`
+- **Motor:** Microsoft SQL Server
+- **Cantidad de tablas:** 25
+- **Cantidad de vistas:** 6
+- **Cantidad de funciones:** 3
+- **Cantidad de procedimientos almacenados:** 4
 
-Este documento describe la estructura de la base de datos utilizada por el sistema de gestión de cine.
+Este documento describe el esquema definido en el script SQL final `ScriptCine2026Final.sql`.
 
-El esquema contempla:
+La base de datos contempla:
 
-- Gestión de clientes.
-- Catálogo de películas y sus características.
+- Gestión de clientes y autenticación.
+- Catálogo de películas, géneros, actores, directores y clasificaciones.
 - Salas, butacas y tipos de sala.
 - Programación de funciones.
 - Tipos de entrada y promociones.
 - Reservas de entradas.
-- Compra y facturación.
+- Ocupación de butacas por función.
+- Facturación y ventas.
 
-**Fuente de verdad:** el script SQL de creación de tablas. No se deben asumir columnas, relaciones, endpoints ni reglas de negocio que no estén definidos en el esquema o confirmados por el backend.
+**Fuente de verdad:** el script SQL final. Los nombres de tablas, columnas, tipos de datos, nulabilidad y relaciones deben respetar ese esquema. Las reglas de negocio adicionales deben confirmarse en el backend.
 
 ---
 
 ## 2. Tablas y columnas
 
+Todas las claves primarias de las tablas con identificadores `IDENTITY` utilizan `int IDENTITY(1,1)`, salvo `OcupacionesButacas`, cuya clave primaria es compuesta.
+
 ### 2.1. Clientes
 
-Almacena los datos de los clientes registrados en el sistema.
+Almacena los usuarios registrados.
 
-| Columna    | Tipo              | Nulable | Descripción                   |
-| ---------- | ----------------- | ------- | ----------------------------- |
-| idCliente  | int IDENTITY(1,1) | No      | Identificador del cliente. PK |
-| nombre     | varchar(100)      | No      | Nombre                        |
-| apellido   | varchar(100)      | No      | Apellido                      |
-| dni        | varchar(20)       | No      | Documento                     |
-| email      | varchar(150)      | No      | Correo electrónico            |
-| telefono   | varchar(30)       | Sí      | Teléfono                      |
-| contraseña | varchar(255)      | No      | Credencial almacenada         |
+| Columna    | Tipo                 | Nulable |
+| ---------- | -------------------- | ------- |
+| idCliente  | int IDENTITY(1,1) PK | No      |
+| nombre     | varchar(100)         | No      |
+| apellido   | varchar(100)         | No      |
+| dni        | varchar(20)          | No      |
+| email      | varchar(150)         | No      |
+| telefono   | varchar(30)          | Sí      |
+| contraseña | varchar(255)         | No      |
+| esAdmin    | bit                  | Sí      |
+
+`esAdmin` permite distinguir usuarios administradores. La columna `contraseña` almacena la credencial del usuario; el tratamiento de contraseñas debe resolverse en el backend.
 
 ### 2.2. CanalesVenta
 
-Canales por los que se realizan las ventas.
+Canales mediante los cuales se registran las ventas.
 
-| Columna      | Tipo              | Nulable | Descripción       |
-| ------------ | ----------------- | ------- | ----------------- |
-| idCanalVenta | int IDENTITY(1,1) | No      | Identificador. PK |
-| descripcion  | varchar(50)       | No      | Nombre del canal  |
+| Columna      | Tipo                 | Nulable |
+| ------------ | -------------------- | ------- |
+| idCanalVenta | int IDENTITY(1,1) PK | No      |
+| descripcion  | varchar(50)          | No      |
 
 ### 2.3. FormasPago
 
 Medios de pago disponibles.
 
-| Columna     | Tipo              | Nulable | Descripción                   |
-| ----------- | ----------------- | ------- | ----------------------------- |
-| idFormaPago | int IDENTITY(1,1) | No      | Identificador. PK             |
-| descripcion | varchar(50)       | No      | Descripción del medio de pago |
+| Columna     | Tipo                 | Nulable |
+| ----------- | -------------------- | ------- |
+| idFormaPago | int IDENTITY(1,1) PK | No      |
+| descripcion | varchar(50)          | No      |
 
 ### 2.4. HorasFuncion
 
-Horarios disponibles para las funciones.
+Horarios predefinidos para las funciones.
 
-| Columna       | Tipo              | Nulable | Descripción        |
-| ------------- | ----------------- | ------- | ------------------ |
-| idHoraFuncion | int IDENTITY(1,1) | No      | Identificador. PK  |
-| horaFuncion   | time              | No      | Hora de la función |
+| Columna       | Tipo                 | Nulable |
+| ------------- | -------------------- | ------- |
+| idHoraFuncion | int IDENTITY(1,1) PK | No      |
+| horaFuncion   | time(7)              | No      |
 
 ### 2.5. Promociones
 
-Promociones y descuentos aplicables a entradas.
+Promociones y descuentos disponibles.
 
-| Columna             | Tipo              | Nulable | Descripción             |
-| ------------------- | ----------------- | ------- | ----------------------- |
-| idPromocion         | int IDENTITY(1,1) | No      | Identificador. PK       |
-| descripcion         | varchar(200)      | No      | Descripción             |
-| porcentajeDescuento | decimal(5,2)      | No      | Porcentaje de descuento |
-| fechaDesde          | date              | No      | Inicio de vigencia      |
-| fechaHasta          | date              | No      | Fin de vigencia         |
+| Columna             | Tipo                 | Nulable |
+| ------------------- | -------------------- | ------- |
+| idPromocion         | int IDENTITY(1,1) PK | No      |
+| descripcion         | varchar(200)         | No      |
+| porcentajeDescuento | decimal(5,2)         | No      |
+| fechaDesde          | date                 | No      |
+| fechaHasta          | date                 | No      |
 
 ### 2.6. PromocionesDias
 
 Días de la semana en los que se aplica una promoción.
 
-| Columna        | Tipo              | Nulable | Descripción            |
-| -------------- | ----------------- | ------- | ---------------------- |
-| idPromocionDia | int IDENTITY(1,1) | No      | Identificador. PK      |
-| diaSemana      | varchar(20)       | No      | Día de la semana       |
-| idPromocion    | int               | No      | Promoción asociada. FK |
+| Columna        | Tipo                 | Nulable |
+| -------------- | -------------------- | ------- |
+| idPromocionDia | int IDENTITY(1,1) PK | No      |
+| diaSemana      | varchar(20)          | No      |
+| idPromocion    | int FK               | No      |
 
 ### 2.7. PromocionesHorarios
 
-Horarios en los que se aplica una promoción.
+Horarios asociados a las promociones.
 
-| Columna            | Tipo              | Nulable | Descripción            |
-| ------------------ | ----------------- | ------- | ---------------------- |
-| idPromocionHorario | int IDENTITY(1,1) | No      | Identificador. PK      |
-| idHoraFuncion      | int               | No      | Horario asociado. FK   |
-| idPromocion        | int               | No      | Promoción asociada. FK |
+| Columna            | Tipo                 | Nulable |
+| ------------------ | -------------------- | ------- |
+| idPromocionHorario | int IDENTITY(1,1) PK | No      |
+| idHoraFuncion      | int FK               | No      |
+| idPromocion        | int FK               | No      |
 
 ### 2.8. TiposEntrada
 
 Categorías de entradas disponibles.
 
-| Columna       | Tipo              | Nulable | Descripción          |
-| ------------- | ----------------- | ------- | -------------------- |
-| idTipoEntrada | int IDENTITY(1,1) | No      | Identificador. PK    |
-| descripcion   | varchar(50)       | No      | Descripción del tipo |
+| Columna       | Tipo                 | Nulable |
+| ------------- | -------------------- | ------- |
+| idTipoEntrada | int IDENTITY(1,1) PK | No      |
+| descripcion   | varchar(50)          | No      |
 
 ### 2.9. TiposSala
 
-Categorías de salas y su precio base.
+Tipos de sala y su precio asociado.
 
-| Columna     | Tipo              | Nulable | Descripción                  |
-| ----------- | ----------------- | ------- | ---------------------------- |
-| idTipoSala  | int IDENTITY(1,1) | No      | Identificador. PK            |
-| descripcion | varchar(50)       | No      | Descripción del tipo de sala |
-| precio      | decimal(10,2)     | No      | Precio asociado al tipo      |
+| Columna     | Tipo                 | Nulable |
+| ----------- | -------------------- | ------- |
+| idTipoSala  | int IDENTITY(1,1) PK | No      |
+| descripcion | varchar(50)          | No      |
+| precio      | decimal(10,2)        | No      |
 
 ### 2.10. Salas
 
 Salas físicas del cine.
 
-| Columna    | Tipo              | Nulable | Descripción            |
-| ---------- | ----------------- | ------- | ---------------------- |
-| idSala     | int IDENTITY(1,1) | No      | Identificador. PK      |
-| numeroSala | int               | No      | Número visible de sala |
-| capacidad  | int               | No      | Capacidad declarada    |
-| idTipoSala | int               | No      | Tipo de sala. FK       |
+| Columna    | Tipo                 | Nulable |
+| ---------- | -------------------- | ------- |
+| idSala     | int IDENTITY(1,1) PK | No      |
+| numeroSala | int                  | No      |
+| capacidad  | int                  | No      |
+| idTipoSala | int FK               | No      |
 
-**Aclaración confirmada por backend:** el formato de proyección (2D/3D) corresponde a la sala. En los datos actuales, las salas 1 y 2 son 2D y la sala 3 es 3D. El formato no está representado por una columna específica en el esquema SQL documentado; no inventar un campo `formato` ni asociarlo a películas o funciones.
+El tipo de sala se obtiene mediante `idTipoSala`.
 
 ### 2.11. Butacas
 
 Butacas pertenecientes a una sala.
 
-| Columna   | Tipo              | Nulable | Descripción                 |
-| --------- | ----------------- | ------- | --------------------------- |
-| idButaca  | int IDENTITY(1,1) | No      | Identificador. PK           |
-| fila      | varchar(10)       | No      | Fila                        |
-| numero    | int               | No      | Número de butaca            |
-| idSala    | int               | No      | Sala a la que pertenece. FK |
-| reservada | bit               | Sí      | Indicador de reserva        |
+| Columna   | Tipo                 | Nulable |
+| --------- | -------------------- | ------- |
+| idButaca  | int IDENTITY(1,1) PK | No      |
+| fila      | varchar(10)          | No      |
+| numero    | int                  | No      |
+| idSala    | int FK               | No      |
+| reservada | bit                  | Sí      |
 
-**Importante:** la tabla relaciona cada butaca con una sala, pero no contiene una relación directa con una función. La disponibilidad debe determinarse para cada combinación de `idFuncion` + `idButaca`, considerando las reservas no canceladas y las ventas asociadas a esa función.
+La relación con una función no se almacena directamente en esta tabla. La disponibilidad se determina mediante `OcupacionesButacas`, utilizando la combinación de `idFuncion` e `idButaca`.
 
-No utilizar `reservada` como estado global de la butaca: una misma butaca puede estar disponible para una función y ocupada para otra. El mecanismo definitivo de consulta, bloqueo temporal y confirmación de disponibilidad todavía debe ser definido por backend.
+No debe utilizarse `reservada` como indicador global de disponibilidad: una misma butaca puede estar ocupada para una función y libre para otra.
 
 ### 2.12. Idiomas
 
 Idiomas disponibles para las funciones.
 
-| Columna     | Tipo              | Nulable | Descripción       |
-| ----------- | ----------------- | ------- | ----------------- |
-| idIdioma    | int IDENTITY(1,1) | No      | Identificador. PK |
-| descripcion | varchar(50)       | No      | Idioma            |
+| Columna     | Tipo                 | Nulable |
+| ----------- | -------------------- | ------- |
+| idIdioma    | int IDENTITY(1,1) PK | No      |
+| descripcion | varchar(50)          | No      |
 
 ### 2.13. Clasificaciones
 
 Clasificaciones de edad de las películas.
 
-| Columna         | Tipo              | Nulable | Descripción       |
-| --------------- | ----------------- | ------- | ----------------- |
-| idClasificacion | int IDENTITY(1,1) | No      | Identificador. PK |
-| descripcion     | varchar(20)       | No      | Clasificación     |
+| Columna         | Tipo                 | Nulable |
+| --------------- | -------------------- | ------- |
+| idClasificacion | int IDENTITY(1,1) PK | No      |
+| descripcion     | varchar(20)          | No      |
 
 ### 2.14. Directores
 
 Directores de películas.
 
-| Columna    | Tipo              | Nulable | Descripción         |
-| ---------- | ----------------- | ------- | ------------------- |
-| idDirector | int IDENTITY(1,1) | No      | Identificador. PK   |
-| nombre     | varchar(100)      | No      | Nombre del director |
+| Columna    | Tipo                 | Nulable |
+| ---------- | -------------------- | ------- |
+| idDirector | int IDENTITY(1,1) PK | No      |
+| nombre     | varchar(100)         | No      |
 
 ### 2.15. Generos
 
 Géneros cinematográficos.
 
-| Columna  | Tipo              | Nulable | Descripción       |
-| -------- | ----------------- | ------- | ----------------- |
-| idGenero | int IDENTITY(1,1) | No      | Identificador. PK |
-| nombre   | varchar(50)       | No      | Nombre del género |
+| Columna  | Tipo                 | Nulable |
+| -------- | -------------------- | ------- |
+| idGenero | int IDENTITY(1,1) PK | No      |
+| nombre   | varchar(50)          | No      |
 
 ### 2.16. Actores
 
 Actores que participan en películas.
 
-| Columna | Tipo              | Nulable | Descripción       |
-| ------- | ----------------- | ------- | ----------------- |
-| idActor | int IDENTITY(1,1) | No      | Identificador. PK |
-| nombre  | varchar(100)      | No      | Nombre del actor  |
+| Columna | Tipo                 | Nulable |
+| ------- | -------------------- | ------- |
+| idActor | int IDENTITY(1,1) PK | No      |
+| nombre  | varchar(100)         | No      |
 
 ### 2.17. Peliculas
 
 Información del catálogo de películas.
 
-| Columna         | Tipo              | Nulable | Descripción                  |
-| --------------- | ----------------- | ------- | ---------------------------- |
-| idPelicula      | int IDENTITY(1,1) | No      | Identificador. PK            |
-| titulo          | varchar(200)      | No      | Título                       |
-| duracion        | int               | No      | Duración                     |
-| idClasificacion | int               | No      | Clasificación. FK            |
-| idDirector      | int               | No      | Director. FK                 |
-| fechaEstreno    | date              | No      | Fecha de estreno             |
-| poster          | varchar(100)      | No      | Referencia o ruta del póster |
-| sinopsis        | varchar(MAX)      | Sí      | Sinopsis                     |
+| Columna         | Tipo                 | Nulable |
+| --------------- | -------------------- | ------- |
+| idPelicula      | int IDENTITY(1,1) PK | No      |
+| titulo          | varchar(200)         | No      |
+| duracion        | int                  | No      |
+| idClasificacion | int FK               | No      |
+| idDirector      | int FK               | No      |
+| fechaEstreno    | date                 | No      |
+| poster          | varchar(300)         | Sí      |
+| sinopsis        | varchar(max)         | Sí      |
+| activa          | bit                  | Sí      |
 
-La unidad de duración no está especificada en el esquema. Confirmar con backend si se expresa en minutos.
+La duración se expresa en minutos según las validaciones del backend.
 
-`poster` es un campo de texto que almacena una referencia o ruta. No se debe asumir que contiene una URL pública completa sin confirmarlo.
+`activa` permite indicar si una película se encuentra disponible para la programación. Aunque el backend crea las películas como activas, la columna admite `NULL` en el esquema SQL.
 
-**Pendiente de esquema:** backend propone utilizar `Peliculas.Activa` (booleano) para indicar si una película está activa o inactiva. Esa columna no aparece en el SQL original documentado. No asumir que existe en la base de datos hasta que se incorpore al esquema o backend confirme una alternativa.
+`poster` almacena una referencia o ruta del póster.
 
 ### 2.18. PeliculasGeneros
 
 Tabla intermedia para la relación muchos a muchos entre películas y géneros.
 
-| Columna          | Tipo              | Nulable | Descripción       |
-| ---------------- | ----------------- | ------- | ----------------- |
-| idPeliculaGenero | int IDENTITY(1,1) | No      | Identificador. PK |
-| idPelicula       | int               | No      | Película. FK      |
-| idGenero         | int               | No      | Género. FK        |
+| Columna          | Tipo                 | Nulable |
+| ---------------- | -------------------- | ------- |
+| idPeliculaGenero | int IDENTITY(1,1) PK | No      |
+| idPelicula       | int FK               | No      |
+| idGenero         | int FK               | No      |
 
 ### 2.19. ActoresPeliculas
 
 Tabla intermedia para la relación muchos a muchos entre actores y películas.
 
-| Columna         | Tipo              | Nulable | Descripción       |
-| --------------- | ----------------- | ------- | ----------------- |
-| idActorPelicula | int IDENTITY(1,1) | No      | Identificador. PK |
-| idActor         | int               | No      | Actor. FK         |
-| idPelicula      | int               | No      | Película. FK      |
+| Columna         | Tipo                 | Nulable |
+| --------------- | -------------------- | ------- |
+| idActorPelicula | int IDENTITY(1,1) PK | No      |
+| idActor         | int FK               | No      |
+| idPelicula      | int FK               | No      |
 
 ### 2.20. Funciones
 
-Funciones programadas para proyectar películas.
+Funciones programadas del cine.
 
-| Columna       | Tipo              | Nulable | Descripción              |
-| ------------- | ----------------- | ------- | ------------------------ |
-| idFuncion     | int IDENTITY(1,1) | No      | Identificador. PK        |
-| fecha         | date              | No      | Fecha de la función      |
-| idHoraFuncion | int               | No      | Horario. FK              |
-| subtitulada   | bit               | No      | Indica si es subtitulada |
-| idPelicula    | int               | No      | Película proyectada. FK  |
-| idSala        | int               | No      | Sala asignada. FK        |
-| idIdioma      | int               | No      | Idioma. FK               |
+| Columna       | Tipo                 | Nulable |
+| ------------- | -------------------- | ------- |
+| idFuncion     | int IDENTITY(1,1) PK | No      |
+| fecha         | date                 | No      |
+| idHoraFuncion | int FK               | No      |
+| subtitulada   | bit                  | No      |
+| idPelicula    | int FK               | No      |
+| idSala        | int FK               | No      |
+| idIdioma      | int FK               | No      |
 
-El formato 2D/3D corresponde a `Salas`, según la aclaración confirmada por backend. Una función queda asociada a una sala mediante `idSala`, por lo que el formato de una función puede determinarse a partir de su sala. No asociar el formato directamente a `Peliculas` ni agregar una propiedad no confirmada al modelo de funciones.
+La duración de la función se obtiene de la película asociada. El horario se obtiene de `HorasFuncion`.
 
 ### 2.21. Reservas
 
-Reservas realizadas por clientes.
+Reservas realizadas por los clientes.
 
-| Columna               | Tipo              | Nulable | Descripción                  |
-| --------------------- | ----------------- | ------- | ---------------------------- |
-| idReserva             | int IDENTITY(1,1) | No      | Identificador. PK            |
-| fechaHoraReserva      | datetime          | No      | Fecha y hora de creación     |
-| idCliente             | int               | No      | Cliente. FK                  |
-| estado                | bit               | No      | Estado de la reserva         |
-| fechaHoraConfirmacion | datetime          | Sí      | Fecha y hora de confirmación |
+| Columna               | Tipo                 | Nulable |
+| --------------------- | -------------------- | ------- |
+| idReserva             | int IDENTITY(1,1) PK | No      |
+| fechaHoraReserva      | datetime             | No      |
+| idCliente             | int FK               | No      |
+| estado                | bit                  | No      |
+| fechaHoraConfirmacion | datetime             | Sí      |
 
-**Aclaración confirmada por backend:** `estado = 0` indica que la reserva está cancelada y `estado = 1` indica que no está cancelada. Una reserva nueva se crea con `estado = true`.
-
-Este campo no representa por sí solo todos los estados posibles del flujo (por ejemplo, pago o confirmación); no inferir estados adicionales sin una regla confirmada por backend.
+El esquema define `estado` como un booleano. La interpretación concreta de sus valores y las reglas de cancelación, confirmación o expiración deben respetar la lógica implementada por el backend.
 
 ### 2.22. DetallesReservas
 
-Entradas y butacas incluidas en una reserva.
+Entradas individuales asociadas a una reserva.
 
-| Columna          | Tipo              | Nulable | Descripción            |
-| ---------------- | ----------------- | ------- | ---------------------- |
-| idDetalleReserva | int IDENTITY(1,1) | No      | Identificador. PK      |
-| idReserva        | int               | No      | Reserva. FK            |
-| idFuncion        | int               | No      | Función. FK            |
-| idButaca         | int               | No      | Butaca. FK             |
-| idTipoEntrada    | int               | No      | Tipo de entrada. FK    |
-| precio           | decimal(10,2)     | No      | Precio de la entrada   |
-| idPromocion      | int               | Sí      | Promoción aplicada. FK |
+| Columna          | Tipo                 | Nulable |
+| ---------------- | -------------------- | ------- |
+| idDetalleReserva | int IDENTITY(1,1) PK | No      |
+| idReserva        | int FK               | No      |
+| idFuncion        | int FK               | No      |
+| idButaca         | int FK               | No      |
+| idTipoEntrada    | int FK               | No      |
+| precio           | decimal(10,2)        | No      |
+| idPromocion      | int FK               | Sí      |
 
-Cada registro representa un detalle de una reserva asociado a una función, una butaca y un tipo de entrada.
+Cada registro representa una entrada reservada para una función y una butaca determinadas.
 
 ### 2.23. Facturas
 
-Comprobantes de compras realizadas por clientes.
+Comprobantes de ventas realizadas.
 
-| Columna          | Tipo              | Nulable | Descripción             |
-| ---------------- | ----------------- | ------- | ----------------------- |
-| idFactura        | int IDENTITY(1,1) | No      | Identificador. PK       |
-| fechaHoraEmision | datetime          | No      | Fecha y hora de emisión |
-| idReserva        | int               | Sí      | Reserva asociada. FK    |
-| idCliente        | int               | No      | Cliente. FK             |
-| idFormaPago      | int               | No      | Forma de pago. FK       |
-| idCanalVenta     | int               | No      | Canal de venta. FK      |
+| Columna          | Tipo                 | Nulable |
+| ---------------- | -------------------- | ------- |
+| idFactura        | int IDENTITY(1,1) PK | No      |
+| fechaHoraEmision | datetime             | No      |
+| idReserva        | int FK               | Sí      |
+| idCliente        | int FK               | No      |
+| idFormaPago      | int FK               | No      |
+| idCanalVenta     | int FK               | No      |
 
-**Importante:** `idReserva` admite `NULL`. Esto permite representar compras directas, sin una reserva previa.
-
-Por lo tanto, no asumir que toda factura tiene una reserva asociada.
+`idReserva` admite `NULL`, por lo que una factura puede corresponder a una venta directa que no proviene de una reserva.
 
 ### 2.24. DetallesFacturas
 
-Entradas incluidas en una factura.
+Entradas individuales incluidas en una factura.
 
-| Columna          | Tipo              | Nulable | Descripción                     |
-| ---------------- | ----------------- | ------- | ------------------------------- |
-| idDetalleFactura | int IDENTITY(1,1) | No      | Identificador. PK               |
-| precioUnitario   | decimal(10,2)     | No      | Precio base de la entrada       |
-| idFactura        | int               | No      | Factura. FK                     |
-| idFuncion        | int               | No      | Función. FK                     |
-| idPromocion      | int               | Sí      | Promoción aplicada. FK          |
-| idButaca         | int               | No      | Butaca. FK                      |
-| idDetalleReserva | int               | Sí      | Detalle de reserva asociado. FK |
-| idTipoEntrada    | int               | No      | Tipo de entrada. FK             |
+| Columna          | Tipo                 | Nulable |
+| ---------------- | -------------------- | ------- |
+| idDetalleFactura | int IDENTITY(1,1) PK | No      |
+| precioUnitario   | decimal(10,2)        | No      |
+| idFactura        | int FK               | No      |
+| idFuncion        | int FK               | No      |
+| idPromocion      | int FK               | Sí      |
+| idButaca         | int FK               | No      |
+| idDetalleReserva | int FK               | Sí      |
+| idTipoEntrada    | int FK               | No      |
 
-Cada registro representa una entrada vendida.
+`precioUnitario` almacena el precio base de la entrada. Cuando existe una promoción, el descuento se determina mediante `idPromocion` y el porcentaje correspondiente.
 
-**Importante:**
+`idDetalleReserva` admite `NULL` para permitir ventas directas que no provienen de una reserva.
 
-- `precioUnitario` representa el precio base.
-- Si existe una promoción, el descuento se obtiene mediante `idPromocion` y `Promociones.porcentajeDescuento`.
-- `idDetalleReserva` admite `NULL`, permitiendo registrar ventas directas que no provienen de una reserva.
+### 2.25. OcupacionesButacas
+
+Registra la ocupación de cada butaca para una función determinada.
+
+| Columna          | Tipo                 | Nulable |
+| ---------------- | -------------------- | ------- |
+| idFuncion        | int FK, PK compuesta | No      |
+| idButaca         | int FK, PK compuesta | No      |
+| idDetalleReserva | int FK               | Sí      |
+| idDetalleFactura | int FK               | Sí      |
+
+La clave primaria está compuesta por:
+
+`(idFuncion, idButaca)`
+
+Esto impide registrar más de una ocupación para la misma butaca en una misma función.
+
+Los vínculos con los detalles de reserva y factura permiten relacionar la ocupación con el origen de la operación.
+
+La tabla es el mecanismo que permite consultar disponibilidad por función. No se debe asumir que `Butacas.reservada` representa el estado actual de todas las funciones.
 
 ---
 
 ## 3. Relaciones entre tablas
 
-### 3.1. Clientes y operaciones
+Las relaciones se definen mediante claves foráneas en el script SQL.
 
-- `Clientes (1) → (N) Reservas`
-- `Clientes (1) → (N) Facturas`
+### 3.1. Películas y catálogo
 
-Un cliente puede realizar varias reservas y compras.
+- `Peliculas.idClasificacion` → `Clasificaciones.idClasificacion`
+- `Peliculas.idDirector` → `Directores.idDirector`
+- `PeliculasGeneros.idPelicula` → `Peliculas.idPelicula`
+- `PeliculasGeneros.idGenero` → `Generos.idGenero`
+- `ActoresPeliculas.idActor` → `Actores.idActor`
+- `ActoresPeliculas.idPelicula` → `Peliculas.idPelicula`
 
-### 3.2. Películas y catálogo
+Una película puede tener varios géneros y varios actores. Un género o actor puede estar asociado a varias películas.
 
-- `Clasificaciones (1) → (N) Peliculas`
-- `Directores (1) → (N) Peliculas`
-- `Peliculas (N) ↔ (N) Generos`, mediante `PeliculasGeneros`.
-- `Peliculas (N) ↔ (N) Actores`, mediante `ActoresPeliculas`.
+### 3.2. Salas y funciones
 
-Una película tiene un director y una clasificación. Puede asociarse con varios géneros y actores.
+- `Salas.idTipoSala` → `TiposSala.idTipoSala`
+- `Butacas.idSala` → `Salas.idSala`
+- `Funciones.idPelicula` → `Peliculas.idPelicula`
+- `Funciones.idSala` → `Salas.idSala`
+- `Funciones.idIdioma` → `Idiomas.idIdioma`
+- `Funciones.idHoraFuncion` → `HorasFuncion.idHoraFuncion`
 
-### 3.3. Salas y funciones
+Una sala contiene varias butacas y puede tener distintas funciones programadas.
 
-- `TiposSala (1) → (N) Salas`
-- `Salas (1) → (N) Butacas`
-- `Salas (1) → (N) Funciones`
-- `Peliculas (1) → (N) Funciones`
-- `Idiomas (1) → (N) Funciones`
-- `HorasFuncion (1) → (N) Funciones`
+### 3.3. Promociones
 
-Una función está asociada a una película, una sala, un idioma y un horario.
+- `PromocionesDias.idPromocion` → `Promociones.idPromocion`
+- `PromocionesHorarios.idPromocion` → `Promociones.idPromocion`
+- `PromocionesHorarios.idHoraFuncion` → `HorasFuncion.idHoraFuncion`
+
+Las promociones pueden estar condicionadas por fechas, días de la semana y horarios.
 
 ### 3.4. Reservas
 
-- `Reservas (1) → (N) DetallesReservas`
-- `Funciones (1) → (N) DetallesReservas`
-- `Butacas (1) → (N) DetallesReservas`
-- `TiposEntrada (1) → (N) DetallesReservas`
-- `Promociones (1) → (N) DetallesReservas`
+- `Reservas.idCliente` → `Clientes.idCliente`
+- `DetallesReservas.idReserva` → `Reservas.idReserva`
+- `DetallesReservas.idFuncion` → `Funciones.idFuncion`
+- `DetallesReservas.idButaca` → `Butacas.idButaca`
+- `DetallesReservas.idTipoEntrada` → `TiposEntrada.idTipoEntrada`
+- `DetallesReservas.idPromocion` → `Promociones.idPromocion`
 
-Una reserva puede contener varios detalles. Cada detalle corresponde a una función, una butaca y un tipo de entrada.
+Una reserva puede contener varios detalles, cada uno asociado a una función, butaca y tipo de entrada.
 
 ### 3.5. Facturación
 
-- `Facturas (1) → (N) DetallesFacturas`
-- `Facturas (N) → (1) Clientes`
-- `Facturas (N) → (1) FormasPago`
-- `Facturas (N) → (1) CanalesVenta`
-- `Facturas (N) → (0..1) Reservas`
-- `Funciones (1) → (N) DetallesFacturas`
-- `Butacas (1) → (N) DetallesFacturas`
-- `TiposEntrada (1) → (N) DetallesFacturas`
-- `Promociones (1) → (N) DetallesFacturas`
-- `DetallesReservas (1) → (0..N) DetallesFacturas`, según las claves foráneas definidas.
+- `Facturas.idCliente` → `Clientes.idCliente`
+- `Facturas.idFormaPago` → `FormasPago.idFormaPago`
+- `Facturas.idCanalVenta` → `CanalesVenta.idCanalVenta`
+- `Facturas.idReserva` → `Reservas.idReserva`
+- `DetallesFacturas.idFactura` → `Facturas.idFactura`
+- `DetallesFacturas.idFuncion` → `Funciones.idFuncion`
+- `DetallesFacturas.idButaca` → `Butacas.idButaca`
+- `DetallesFacturas.idTipoEntrada` → `TiposEntrada.idTipoEntrada`
+- `DetallesFacturas.idPromocion` → `Promociones.idPromocion`
+- `DetallesFacturas.idDetalleReserva` → `DetallesReservas.idDetalleReserva`
 
-Una factura puede estar asociada a una reserva o corresponder a una compra directa.
+Una factura contiene uno o varios detalles de factura.
 
-### 3.6. Promociones
+### 3.6. Ocupación de butacas
 
-- `Promociones (1) → (N) PromocionesDias`
-- `Promociones (1) → (N) PromocionesHorarios`
-- `HorasFuncion (1) → (N) PromocionesHorarios`
+- `OcupacionesButacas.idFuncion` → `Funciones.idFuncion`
+- `OcupacionesButacas.idButaca` → `Butacas.idButaca`
+- `OcupacionesButacas.idDetalleReserva` → `DetallesReservas.idDetalleReserva`
+- `OcupacionesButacas.idDetalleFactura` → `DetallesFacturas.idDetalleFactura`
 
-Las promociones pueden tener días y horarios asociados. También pueden aparecer asociadas a los detalles de reservas y facturas.
-
----
-
-## 4. Reglas y consideraciones para el frontend
-
-Esta sección contiene criterios importantes para implementar correctamente las funcionalidades. Las reglas que no están garantizadas por restricciones SQL deben validarse mediante el backend.
-
-### 4.1. Catálogo de películas
-
-Para mostrar una película se pueden utilizar:
-
-- Título.
-- Póster.
-- Sinopsis.
-- Duración.
-- Fecha de estreno.
-- Clasificación.
-- Director.
-- Géneros.
-- Actores.
-
-Los géneros y actores pueden requerir datos relacionados obtenidos mediante las tablas intermedias.
-
-### 4.2. Funciones
-
-Una función reúne:
-
-- Una película.
-- Una fecha.
-- Un horario.
-- Una sala.
-- Un idioma.
-- La condición de subtitulada o no.
-
-El frontend debe obtener las funciones disponibles desde la API. No debe calcular ni inventar disponibilidad a partir de los datos del catálogo.
-
-### 4.3. Selección de butacas
-
-La selección de butacas debe estar vinculada a una función específica.
-
-La disponibilidad debe calcularse por combinación de `IdFuncion` + `IdButaca`, considerando las reservas no canceladas (`Reservas.estado = 1`) y las entradas vendidas registradas en `DetallesFacturas` para esa función.
-
-No utilizar `Butacas.reservada` como indicador global de disponibilidad: la misma butaca se reutiliza en distintas funciones. El diseño definitivo de la consulta y el mecanismo de bloqueo temporal todavía están pendientes de definición por backend.
-
-La validación definitiva debe realizarse en el servidor al confirmar una reserva o compra, para evitar que dos clientes puedan adquirir la misma butaca por operaciones simultáneas.
-
-### 4.4. Reserva y compra
-
-El modelo contempla dos modalidades:
-
-**Reserva:**
-
-- Se registra una reserva.
-- Sus entradas se almacenan en `DetallesReservas`.
-- La reserva pertenece a un cliente.
-- Puede tener una fecha de confirmación.
-
-**Compra directa:**
-
-- Se genera una factura sin necesidad de una reserva previa.
-- `Facturas.idReserva` puede ser `NULL`.
-- Las entradas se registran en `DetallesFacturas`.
-- `DetallesFacturas.idDetalleReserva` puede ser `NULL`.
-
-**Compra de una reserva:**
-
-- Una factura puede asociarse a una reserva existente.
-- Los detalles de la factura pueden referenciar los detalles de esa reserva.
-
-El flujo exacto de confirmación, vencimiento y cancelación debe acordarse con backend.
-
-### 4.5. Promociones y precios
-
-Los importes se almacenan como `decimal(10,2)`.
-
-Para los detalles de reservas, el precio se encuentra en `DetallesReservas.precio`.
-
-Para los detalles de facturas, el precio base se encuentra en `DetallesFacturas.precioUnitario`.
-
-El porcentaje de descuento se encuentra en `Promociones.porcentajeDescuento`.
-
-El frontend debe mostrar el precio final que informe la API. El backend debe ser responsable de validar la promoción y calcular el importe definitivo.
-
-### 4.6. Autenticación
-
-La tabla `Clientes` contiene información de acceso.
-
-El frontend debe enviar las credenciales al endpoint de autenticación definido por backend y manejar el resultado de forma segura.
-
-Nunca debe acceder directamente a la base de datos ni almacenar contraseñas en texto plano en el navegador.
-
-La autorización de administradores y clientes debe estar validada también en el backend. La protección de rutas de React es solamente una medida adicional de navegación.
+La clave primaria compuesta `(idFuncion, idButaca)` identifica una ocupación única por función y butaca.
 
 ---
 
-## 5. Restricciones y aspectos que no están definidos en el script
+## 4. Vistas
 
-El script define claves primarias, claves foráneas, tipos de datos y nulabilidad. Sin embargo, no define explícitamente varias reglas que el frontend podría necesitar.
+El script SQL crea las siguientes vistas:
 
-No asumir que existen las siguientes restricciones:
+| Vista                                  | Propósito                                                                                              |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `vw_AnalisisVentasGeneroClasificacion` | Analiza entradas vendidas, ventas con y sin promoción e ingresos agrupados por género y clasificación. |
+| `VentasPeliculaSala`                   | Relaciona películas, tipos de sala, detalles de factura e importes considerando descuentos.            |
+| `vw_RendimientoSalas`                  | Resume funciones y entradas vendidas por sala, año y mes.                                              |
+| `vw_AnalisisComprasClientes`           | Resume compras por cliente: facturas, entradas, funciones, películas e importe total con descuentos.   |
+| `vw_EntradasFuncion`                   | Calcula la cantidad de entradas vendidas por función.                                                  |
+| `vw_UsoButacasSalas`                   | Resume reservas y ventas asociadas a las butacas de cada sala.                                         |
 
-- `dni` único.
-- `email` único.
-- Combinación de fila y número de butaca única dentro de una sala.
-- Combinación de sala, fecha y horario única para una función.
-- Porcentaje de descuento limitado entre 0 y 100.
-- Fecha de inicio de una promoción anterior o igual a su fecha de finalización.
-- Capacidad de sala igual a la cantidad de butacas registradas.
-- Unicidad de las asociaciones de películas con géneros o actores.
-- Unicidad de los días y horarios asociados a una promoción.
-
-Estas reglas pueden estar implementadas en procedimientos, triggers, servicios o validaciones del backend, pero no se desprenden de las restricciones incluidas en este script.
-
-También debe confirmarse:
-
-- La unidad de `Peliculas.duracion`.
-- El significado operativo de `Butacas.reservada` (no debe tratarse como disponibilidad global).
-- El mecanismo de bloqueo temporal y validación concurrente de butacas.
-- El tratamiento de reservas vencidas y su relación con `Reservas.estado`.
-- La incorporación de `Peliculas.Activa` al esquema o la alternativa que defina backend.
-- El formato y origen de las imágenes de póster.
-
-Ya están confirmados por backend: el significado de `Reservas.estado` (`0` cancelada, `1` no cancelada; nuevas reservas con `true`) y que el formato 2D/3D corresponde a `Salas`.
+Estas vistas centralizan consultas de análisis y evitan repetir las mismas operaciones de agrupación y relación entre tablas.
 
 ---
 
-## 6. Objetos de base de datos adicionales
+## 5. Funciones definidas por el usuario
 
-Este documento describe las 24 tablas del script compartido.
+| Función                                  | Parámetros                                                            | Retorno        | Propósito                                                                               |
+| ---------------------------------------- | --------------------------------------------------------------------- | -------------- | --------------------------------------------------------------------------------------- |
+| `fn_Ocupacion`                           | `@entradas INT`, `@capacidad INT`                                     | `DECIMAL(5,2)` | Calcula el porcentaje de ocupación de una sala o función.                               |
+| `fn_TipoVenta`                           | `@idPromocion INT`                                                    | `VARCHAR(20)`  | Devuelve si una venta se realizó con o sin promoción.                                   |
+| `fn_RecaudacionMensualPeliculasFiltrada` | Fecha inicial, fecha final, género opcional e importe mínimo opcional | Tabla          | Obtiene entradas vendidas y recaudación por película y período, con filtros opcionales. |
 
-No se documentan vistas, procedimientos almacenados, funciones o triggers porque no están incluidos en este script de creación de tablas.
+### Consideraciones
 
-Si el backend utiliza esos objetos para consultas o reglas de negocio, deben agregarse a esta sección cuando se comparta su definición.
+- `fn_Ocupacion` utiliza `NULLIF` para evitar una división por cero.
+- `fn_TipoVenta` considera que un `idPromocion` nulo representa una venta sin promoción.
+- `fn_RecaudacionMensualPeliculasFiltrada` devuelve una tabla con información de recaudación y permite filtrar por género e importe mínimo.
 
 ---
 
-## 7. Instrucciones para agentes de IA
+## 6. Procedimientos almacenados
 
-Al trabajar en el frontend:
+| Procedimiento                        | Parámetros                                        | Propósito                                                                                                                                    |
+| ------------------------------------ | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pa_AnalizarComprasClientes`         | `@cantidadPeliculas INT`, `@cantidadEntradas INT` | Identifica clientes que cumplen mínimos de películas y entradas compradas y superan el promedio de importe total.                            |
+| `pa_CompararGenerosPorClasificacion` | Sin parámetros                                    | Compara ventas e ingresos por género y clasificación, incluyendo el promedio y la comparación respecto de ese promedio.                      |
+| `pa_OcupacionFuncion`                | `@idFuncion INT`                                  | Devuelve información de ocupación de una función, incluyendo película, entradas vendidas, capacidad y porcentaje de ocupación.               |
+| `sp_RendimientoSalas`                | `@mes INT`, `@anio INT`                           | Consulta el rendimiento de salas para un mes y año determinados, incluyendo funciones, entradas vendidas y promedio de entradas por función. |
 
-1. Utilizar los nombres de tablas y campos de este documento como referencia del modelo de datos.
-2. No crear propiedades, columnas o relaciones que no estén documentadas.
-3. No asumir que los nombres de las propiedades JSON de la API coinciden con los nombres SQL. El backend puede utilizar DTOs con nombres diferentes.
-4. No inventar endpoints, parámetros, respuestas ni códigos de estado HTTP.
-5. No conectar React directamente con SQL Server.
-6. Obtener datos y realizar operaciones exclusivamente mediante los servicios de API.
-7. Mantener separados los datos mock y las llamadas reales a la API.
-8. No considerar una reserva o compra exitosa hasta recibir la confirmación del backend.
-9. Respetar las reglas de autorización y validación del servidor.
-10. Si una funcionalidad requiere un dato que no aparece en este documento, señalarlo como pendiente de confirmación en lugar de inventarlo.
+---
 
-**Prioridad:** el contrato de la API y las reglas confirmadas por el equipo backend determinan cómo debe comunicarse el frontend con el sistema. Este documento describe el modelo SQL, no reemplaza el contrato HTTP.
+## 7. Consideraciones para el desarrollo
+
+1. La disponibilidad de butacas se consulta por la combinación `idFuncion` + `idButaca`, utilizando `OcupacionesButacas`.
+2. No utilizar `Butacas.reservada` como indicador global de disponibilidad.
+3. `Facturas.idReserva` puede ser nulo cuando la venta no proviene de una reserva.
+4. `DetallesFacturas.idDetalleReserva` puede ser nulo cuando la entrada se vende directamente.
+5. `DetallesFacturas.precioUnitario` representa el precio base; el descuento se calcula mediante la promoción asociada.
+6. `DetallesReservas.precio` almacena el precio correspondiente al detalle de reserva.
+7. `Peliculas.activa` admite valores nulos en la base de datos, aunque el backend contempla crear películas activas.
+8. `Reservas.estado` es de tipo `bit`. No se deben inventar estados adicionales sin modificar y confirmar el modelo.
+9. Las relaciones entre películas y géneros, y entre actores y películas, se resuelven mediante tablas intermedias.
+10. Los datos que determinan precios, promociones, disponibilidad y estados deben validarse en el backend.
+
+---
+
+## 8. Fuente de verdad y mantenimiento
+
+El script `ScriptCine2026Final.sql` es la referencia para el esquema de la base de datos.
+
+Ante cualquier cambio en tablas, columnas, claves o relaciones:
+
+1. Actualizar el script SQL.
+2. Actualizar las entidades y configuraciones de Entity Framework Core.
+3. Verificar las consultas y servicios que utilizan las estructuras modificadas.
+4. Actualizar este documento.
+5. Revisar el contrato de la API si el cambio afecta los datos enviados o recibidos por el frontend.
+
+No asumir que una propiedad de una entidad, un DTO o una pantalla existe en la base de datos si no está definida en el esquema o confirmada mediante una modificación posterior.
