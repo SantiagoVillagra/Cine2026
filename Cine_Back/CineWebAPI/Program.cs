@@ -58,11 +58,11 @@ builder.Services.AddScoped<IPeliculaService, PeliculaService>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 
-builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
-builder.Services.AddScoped<IReservaService, ReservaService>();
+//builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+//builder.Services.AddScoped<IReservaService, ReservaService>();
 
-builder.Services.AddScoped<IFacturaRepository, FacturaRepository>();
-builder.Services.AddScoped<IFacturaService, FacturaService>();
+//builder.Services.AddScoped<IFacturaRepository, FacturaRepository>();
+//builder.Services.AddScoped<IFacturaService, FacturaService>();
 
 builder.Services.AddScoped<IFuncionRepository, FuncionRepository>();
 builder.Services.AddScoped<IFuncionService, FuncionService>();
@@ -90,6 +90,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 //COPIADO DEL APUNTE, EL DEL PROFE NO LO TENIA:
 builder.Services.AddAuthorization();
 
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Front", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -104,6 +116,11 @@ app.UseHttpsRedirection();
 //COPIADO DEL APUNTE, EL DEL PROFE NO LO TENIA:
 app.UseAuthentication();
 
+app.UseHttpsRedirection();
+app.UseCors("Front");   // <-- acá
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
 app.UseAuthorization();
 
