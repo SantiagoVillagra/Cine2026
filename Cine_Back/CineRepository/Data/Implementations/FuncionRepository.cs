@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CineRepository.Data.Interfaces;
 using CineRepository.DTOs;
-using CineRepository.Domain;
+
 
 namespace CineRepository.Data.Implementations
 {

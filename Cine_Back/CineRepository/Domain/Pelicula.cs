@@ -41,6 +41,9 @@ namespace CineRepository.Domain
 
         [ForeignKey(nameof(IdClasificacion))]
         [JsonIgnore]
+
+        [Column("activa")]
+        public bool Activa { get; set; } = true;
         public virtual Clasificacion? Clasificacion { get; set; }
 
         [ForeignKey(nameof(IdDirector))]
