@@ -10,6 +10,6 @@ export function useAuth() {
 
   return {
     ...context,
-    isAuthenticated: Boolean(context.user),
+    isAuthenticated: Boolean(context.user && context.token),
   }
 }

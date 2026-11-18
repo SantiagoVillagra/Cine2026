@@ -1,146 +1,235 @@
-# API Contract – Proyecto de cine
+# API Contract – Cine 2026
 
-**Tecnología backend:** ASP.NET Core Web API · Entity Framework Core · SQL Server  
-**Frontend:** React + Vite  
-**Estado:** documento de planificación consolidado; las rutas y DTOs son propuestas hasta que el backend confirme su implementación.
+## 1. Información general
 
-## 1. Propósito y criterio de uso
+Contrato de comunicación entre el frontend y el backend del sistema Cine 2026.
 
-Este documento reúne la planificación de endpoints compartida por el equipo backend y las decisiones que ya se habían relevado para el frontend.
+- **Backend:** ASP.NET Core Web API
+- **Base de datos:** Microsoft SQL Server (`cine_proyecto`)
+- **Base URL local:** `https://localhost:7131`
+- **Formato:** JSON
+- **Content-Type:** `application/json`
+- **Autenticación:** JWT Bearer
+- **Roles definidos en el token:** `Admin` y `Client`
 
-**Fuente principal:** `planificacion_endpoints_cine.pdf` (planificación de endpoints). Cuando el PDF define una ruta, método, acceso o estructura de datos, se conserva esa propuesta. Los puntos que el PDF no define se marcan como pendientes; no deben completarse por suposición.
+El backend utiliza Entity Framework Core para acceder a la base de datos.
 
-Este documento describe el contrato HTTP propuesto. `database.md` describe el esquema SQL. Si una operación requiere una tabla o columna que todavía no está en el esquema SQL documentado, se señala explícitamente.
+**Importante:** este documento diferencia los endpoints que existen actualmente en el backend de las funcionalidades que todavía no tienen una implementación disponible. No se deben consumir rutas pendientes como si ya estuvieran funcionando.
 
-## 2. Criterios generales
+---
 
-- El backend protege los endpoints y valida permisos. Ocultar botones o proteger rutas en React no reemplaza la autorización del servidor.
-- El `idCliente` de un usuario autenticado se obtiene del claim del JWT. No confiar en un `idCliente` enviado por el frontend para operaciones del propio usuario.
-- El frontend envía solamente los datos que el usuario puede elegir. El backend calcula precios, promociones, fechas de servidor y estados.
-- No aceptar `esAdmin`, precios, descuentos ni estados como datos confiables enviados por el frontend.
-- Separar lectura y escritura: `GET` consulta; `POST` crea; `PUT`/`PATCH` modifica.
-- Utilizar DTOs para requests y responses; no exponer directamente entidades EF Core.
-- Validar en backend las relaciones, la vigencia de películas y funciones, la disponibilidad de butacas, la propiedad de reservas y el estado de pago.
-- Operaciones relacionadas deben ejecutarse dentro de transacciones.
-- Respuestas HTTP propuestas:
-  - `200 OK`: consulta o modificación con respuesta.
-  - `201 Created`: creación exitosa.
-  - `400 Bad Request`: datos inválidos.
-  - `401 Unauthorized`: falta autenticación válida.
-  - `403 Forbidden`: usuario autenticado sin permisos.
-  - `404 Not Found`: recurso inexistente.
-  - `409 Conflict`: conflicto de disponibilidad o estado.
+## 2. Convenciones generales
 
-## 3. Autenticación y autorización
+### 2.1. Formato de las solicitudes
 
-### 3.1. JWT
+Las solicitudes que envían un body utilizan JSON.
 
-La planificación indica que el login debe permitir acceso anónimo (`[AllowAnonymous]`) y, si las credenciales son correctas, emitir un JWT con identificador, email y rol.
+Ejemplo:
 
-El rol debe incorporarse como claim de rol (por ejemplo, `ClaimTypes.Role`) con los valores `Admin` o `Client`. Para obtener el identificador del cliente autenticado, el backend puede leer `ClaimTypes.NameIdentifier`.
+```http
+POST /api/peliculas
+Content-Type: application/json
+```
 
-### 3.2. Reglas de acceso
+### 2.2. Fechas y horas
 
-- Catálogo de películas y consulta de funciones: públicos, si el negocio decide que se puedan consultar sin iniciar sesión.
-- Operaciones administrativas: `[Authorize(Roles = "Admin")]`.
-- Operaciones de clientes: `[Authorize(Roles = "Client")]`.
-- Operaciones permitidas al dueño del recurso o a Admin: autenticar y validar la propiedad en controller/servicio.
-- Venta directa: Admin o personal autorizado de boletería. El rol concreto para ese personal todavía debe definirse.
+- Las fechas se envían en formato `YYYY-MM-DD` o en un formato ISO 8601 aceptado por ASP.NET.
+- Los horarios de las funciones se representan mediante `idHoraFuncion`.
+- En las respuestas de funciones, `hora` se devuelve como una cadena de hora (`TimeSpan`).
 
-### 3.3. Registro y login
+### 2.3. Códigos HTTP
 
-En la planificación PDF no aparecen rutas ni DTOs detallados para registro y login. En el relevamiento anterior se había contemplado:
-- Registro de cliente: datos personales y credenciales.
-- Login: email y contraseña; respuesta con JWT e información suficiente para identificar al usuario y su rol.
+| Código | Significado                                                                         |
+| ------ | ----------------------------------------------------------------------------------- |
+| 200    | Solicitud procesada correctamente. Devuelve contenido.                              |
+| 201    | Recurso creado correctamente.                                                       |
+| 204    | Operación procesada correctamente, sin contenido de respuesta.                      |
+| 400    | Solicitud inválida o error de validación.                                           |
+| 401    | No autenticado o credenciales inválidas.                                            |
+| 403    | Usuario autenticado sin permisos suficientes, cuando la autorización está aplicada. |
+| 404    | Recurso o referencia inexistente.                                                   |
+| 409    | Conflicto con el estado actual del recurso.                                         |
+| 500    | Error interno del servidor.                                                         |
 
-**Pendiente:** confirmar rutas, nombres de propiedades, validaciones, formato exacto de la respuesta JWT, expiración/renovación del token y si el registro público estará habilitado. No inventar esos contratos en el frontend.
+### 2.4. Formato de errores
 
-## 4. Películas
+El backend puede devolver errores en distintos formatos según el origen.
 
-### 4.1. Listado de películas
+**Errores de negocio**
 
-`GET /api/peliculas`
+Algunos errores devuelven texto plano.
 
-- **Acceso propuesto:** público, si el catálogo se ofrece sin login.
-- **Uso:** obtener los datos necesarios para tarjetas o listados.
-- **Respuesta sugerida por el PDF:** `idPelicula`, `titulo`, `poster`, `clasificacion` y `generos`.
+Ejemplo:
 
-Ejemplo de respuesta:
+```text
+No existe el director con id: 99
+```
+
+**Errores de validación**
+
+Los errores producidos por validaciones de ASP.NET pueden devolver un objeto `ProblemDetails`, con información en la propiedad `errors`.
+
+**Errores de login**
+
+El endpoint de login devuelve un objeto JSON con una propiedad `message`.
+
+El frontend debe contemplar los distintos formatos y no asumir que todos los errores tienen la misma estructura.
+
+---
+
+## 3. Autenticación
+
+### 3.1. Login
+
+**POST `/api/login`**
+
+- **Estado:** implementado.
+- **Acceso previsto:** público.
+- **Uso:** autenticar un cliente o administrador y obtener un JWT.
+
+**Body:**
+
+```json
+{
+  "userEmail": "usuario@ejemplo.com",
+  "password": "contraseña"
+}
+```
+
+El DTO utilizado por el backend contiene:
+
+| Campo     | Tipo   |
+| --------- | ------ |
+| userEmail | string |
+| password  | string |
+
+**Respuesta 200:**
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "userId": 15,
+  "email": "usuario@ejemplo.com",
+  "isAdmin": false
+}
+```
+
+Campos de la respuesta:
+
+| Campo   | Tipo   | Descripción                            |
+| ------- | ------ | -------------------------------------- |
+| token   | string | JWT generado por el backend.           |
+| userId  | int    | Identificador del usuario autenticado. |
+| email   | string | Correo electrónico del usuario.        |
+| isAdmin | bool   | Indica si el usuario es administrador. |
+
+**Errores:**
+
+| Código | Situación                        | Respuesta orientativa                              |
+| ------ | -------------------------------- | -------------------------------------------------- |
+| 400    | Body inválido o ausente          | Objeto con `message`.                              |
+| 401    | Usuario o contraseña incorrectos | `{ "message": "Usuario y/o Password incorrecto" }` |
+| 500    | Error interno                    | Objeto con `message`.                              |
+
+### 3.2. Claims del JWT
+
+El token generado contiene los siguientes claims:
+
+- `NameIdentifier`: identificador del usuario.
+- `Name`: correo electrónico.
+- `Role`: `Admin` o `Client`.
+
+El token tiene una duración de 30 minutos.
+
+### 3.3. Envío del token
+
+Cuando un endpoint requiera autenticación, el frontend deberá enviar:
+
+```http
+Authorization: Bearer <token>
+```
+
+El token debe almacenarse y administrarse desde el contexto de autenticación del frontend, evitando duplicar la lógica en cada componente.
+
+**Advertencia sobre la implementación actual:** aunque el backend configura autenticación JWT, varias restricciones `[Authorize]` y `[Authorize(Roles = "Admin")]` están comentadas en los controladores. Por lo tanto, no se debe asumir que todos los permisos descriptos en la planificación están aplicados actualmente.
+
+---
+
+# 4. Películas
+
+## 4.1. Listar películas
+
+**GET `/api/peliculas`**
+
+- **Estado:** implementado.
+- **Acceso:** público.
+- **Uso:** obtener todas las películas.
+
+**Respuesta 200:**
 
 ```json
 [
   {
     "idPelicula": 12,
-    "titulo": "Título de ejemplo",
-    "poster": "/ruta/poster.jpg",
-    "clasificacion": "ATP",
-    "generos": ["Acción", "Aventura"]
+    "titulo": "Los autos locos",
+    "duracion": 100,
+    "idClasificacion": 2,
+    "idDirector": 3,
+    "fechaEstreno": "2026-11-15",
+    "poster": "https://...",
+    "sinopsis": "...",
+    "activa": true,
+    "peliculasGeneros": [],
+    "actoresPeliculas": []
   }
 ]
 ```
 
-### 4.2. Detalle de película
+La respuesta devuelve la entidad de película, incluyendo sus relaciones de géneros y actores.
 
-`GET /api/peliculas/{id}`
+La estructura exacta de los objetos anidados debe verificarse en Swagger.
 
-- **Acceso propuesto:** público.
-- **Uso:** consultar información completa de una película.
-- **Respuesta posible:** título, duración, clasificación, director, fecha de estreno, póster, sinopsis, géneros y funciones disponibles.
-- La planificación recomienda no incluir todas las butacas en esta respuesta: la disponibilidad cambia y se consulta por función.
+**Consideraciones:**
 
-Ejemplo orientativo:
+- El endpoint incluye películas activas e inactivas.
+- Para mostrar la cartelera vigente, el frontend debe filtrar por `activa`.
+- La respuesta no debe tratarse como un DTO reducido: devuelve la entidad y sus relaciones.
 
-```json
-{
-  "idPelicula": 12,
-  "titulo": "Título de ejemplo",
-  "duracion": 125,
-  "clasificacion": "ATP",
-  "director": "Nombre del director",
-  "fechaEstreno": "2026-10-01",
-  "poster": "/ruta/poster.jpg",
-  "sinopsis": "...",
-  "generos": ["Acción", "Aventura"],
-  "funciones": [
-    {
-      "idFuncion": 45,
-      "fecha": "2026-11-20",
-      "hora": "20:30",
-      "sala": "Sala 2"
-    }
-  ]
-}
+## 4.2. Obtener película por ID
+
+**GET `/api/peliculas/{id}`**
+
+- **Estado:** implementado.
+- **Uso:** consultar una película por su identificador.
+
+**Respuesta 200:**
+
+Devuelve la entidad de película con el mismo formato general del listado.
+
+**Errores:**
+
+| Código | Situación                  |
+| ------ | -------------------------- |
+| 404    | La película no existe.     |
+| 400    | Error durante la consulta. |
+
+Ejemplo de mensaje:
+
+```text
+No existe pélicula con id: 12
 ```
 
-### 4.3. Activar o desactivar película
+**Nota:** el atributo `[Authorize]` de este endpoint está comentado en el controlador actual. No asumir que requiere autenticación hasta que se aplique esa restricción.
 
-`PUT /api/peliculas/{id}/estado`
+## 4.3. Crear película
 
-- **Acceso propuesto:** Admin.
-- **Uso:** cambiar el estado de una película sin eliminarla físicamente.
-- **Body propuesto:**
+**POST `/api/peliculas`**
 
-```json
-{
-  "activa": false
-}
-```
+- **Estado:** implementado.
+- **Uso:** crear una película con sus géneros y actores.
+- **Acceso previsto:** Admin.
 
-- El backend debe comprobar que la película exista y que el cambio sea válido.
-- Una película inactiva no debería ofrecerse para nuevas funciones; se puede conservar el historial de funciones anteriores.
-
-**Dependencia del esquema:** el PDF aclara que, si `Activa` todavía no existe en SQL Server y en la entidad `Pelicula`, debe incorporarse antes. La columna no estaba en el SQL original documentado en `database.md`. No asumir que ya existe.
-
-### 4.4. Alta de película
-
-`POST /api/peliculas`
-
-- **Acceso propuesto:** Admin.
-- **Uso:** crear una película y sus relaciones con géneros y actores.
-- El frontend envía identificadores de clasificación y director, datos propios de la película y arrays de IDs de géneros y actores.
-- El backend valida que las referencias existan y crea las filas de `PeliculasGeneros` y `ActoresPeliculas`.
-
-Body propuesto:
+**Body:**
 
 ```json
 {
@@ -156,21 +245,104 @@ Body propuesto:
 }
 ```
 
-## 5. Funciones
+| Campo           | Tipo   | Validación                              |
+| --------------- | ------ | --------------------------------------- |
+| titulo          | string | Obligatorio.                            |
+| duracion        | int    | Entre 1 y 600 minutos.                  |
+| idClasificacion | int    | Mayor o igual a 1 y debe existir.       |
+| idDirector      | int    | Mayor o igual a 1 y debe existir.       |
+| fechaEstreno    | date   | Obligatoria.                            |
+| poster          | string | El DTO actual lo exige.                 |
+| sinopsis        | string | Opcional.                               |
+| idsGeneros      | int[]  | El DTO exige que se envíe la colección. |
+| idsActores      | int[]  | El DTO exige que se envíe la colección. |
 
-### 5.1. Programar función
+El backend valida las referencias y crea las relaciones correspondientes.
 
-`POST /api/funciones`
+La película se crea con `activa = true`.
 
-- **Acceso propuesto:** Admin.
-- **Uso:** programar una función.
+**Respuesta 201:**
 
-Body propuesto:
+```json
+{
+  "idPelicula": 94
+}
+```
+
+**Errores:**
+
+| Código | Situación                                                      |
+| ------ | -------------------------------------------------------------- |
+| 400    | Body inválido o validaciones fallidas.                         |
+| 404    | No existe la clasificación, director, género o actor indicado. |
+
+Ejemplos de errores de referencias:
+
+```text
+No existe la clasificación con id: 99
+No existe el director con id: 99
+No existen los géneros con id: 50, 60
+No existen los actores con id: 77
+```
+
+**Importante:** el DTO actual exige `poster`, `idsGeneros` e `idsActores`. No asumir que `poster` es opcional, aunque la columna de la base de datos permita `NULL`.
+
+La restricción de acceso de administrador está comentada en el controlador actual.
+
+## 4.4. Cambiar estado de película
+
+**PUT `/api/peliculas/{id}/estado`**
+
+- **Estado:** implementado.
+- **Uso:** activar o desactivar una película.
+- **Acceso previsto:** Admin.
+
+**Body:**
+
+```json
+{
+  "activa": false
+}
+```
+
+| Campo  | Tipo | Validación   |
+| ------ | ---- | ------------ |
+| activa | bool | Obligatorio. |
+
+**Respuesta 204:**
+
+Sin contenido.
+
+**Errores:**
+
+| Código | Situación                                            |
+| ------ | ---------------------------------------------------- |
+| 400    | Falta el campo `activa` o se produce otro error.     |
+| 404    | No existe la película.                               |
+| 409    | La película ya se encuentra en el estado solicitado. |
+
+La operación modifica el estado de la película sin eliminarla físicamente.
+
+La restricción de acceso de administrador está comentada en el controlador actual.
+
+---
+
+# 5. Funciones
+
+## 5.1. Crear función
+
+**POST `/api/funciones`**
+
+- **Estado:** implementado.
+- **Uso:** programar una nueva función.
+- **Acceso previsto:** Admin.
+
+**Body:**
 
 ```json
 {
   "fecha": "2026-11-20",
-  "idHoraFuncion": 4,
+  "idHoraFuncion": 2,
   "subtitulada": false,
   "idPelicula": 12,
   "idSala": 2,
@@ -178,35 +350,107 @@ Body propuesto:
 }
 ```
 
-Validaciones indicadas por el PDF:
-- Verificar que existan película, sala, idioma y horario.
-- Verificar que la película esté activa.
-- Verificar que la sala no tenga otra función superpuesta.
-- Comparar intervalos de inicio y fin, no solamente la hora de inicio. Si corresponde, agregar un margen de limpieza/preparación.
-- Obtener la duración desde la película almacenada en la base de datos; no confiar en una duración enviada por el frontend.
+| Campo         | Tipo | Validación                        |
+| ------------- | ---- | --------------------------------- |
+| fecha         | date | Obligatoria.                      |
+| idHoraFuncion | int  | Mayor o igual a 1 y debe existir. |
+| subtitulada   | bool | Obligatorio.                      |
+| idPelicula    | int  | Mayor o igual a 1 y debe existir. |
+| idSala        | int  | Mayor o igual a 1 y debe existir. |
+| idIdioma      | int  | Mayor o igual a 1 y debe existir. |
 
-### 5.2. Consultar funciones
+El backend verifica las referencias y que la película esté activa.
 
-`GET /api/funciones`
+También valida que no existan funciones superpuestas en la misma sala.
 
-- **Acceso propuesto:** público.
-- **Uso:** consultar funciones.
-- **Filtros opcionales sugeridos:** fecha e `idPelicula`.
+Para determinar el solapamiento se considera el intervalo de la función, teniendo en cuenta la duración de la película y el margen de preparación definido en el backend.
+
+**Respuesta 201:**
+
+```json
+{
+  "idFuncion": 250
+}
+```
+
+**Errores:**
+
+| Código | Situación                                                          |
+| ------ | ------------------------------------------------------------------ |
+| 400    | Body inválido o error de validación.                               |
+| 404    | No existe la película, sala, idioma u horario indicado.            |
+| 409    | La película está inactiva o la sala tiene una función superpuesta. |
+
+La restricción de acceso de administrador está comentada en el controlador actual.
+
+## 5.2. Consultar funciones
+
+**GET `/api/funciones`**
+
+- **Estado:** implementado.
+- **Acceso:** público.
+- **Uso:** consultar funciones programadas.
+
+**Query params:**
+
+| Parámetro  | Tipo | Obligatorio |
+| ---------- | ---- | ----------- |
+| fecha      | date | No          |
+| idPelicula | int  | No          |
 
 Ejemplo:
 
-`GET /api/funciones?fecha=2026-11-20&idPelicula=12`
+```http
+GET /api/funciones?fecha=2026-11-20&idPelicula=12
+```
 
-### 5.3. Consultar butacas y disponibilidad de una función
+Los filtros pueden utilizarse individualmente o en conjunto.
 
-`GET /api/funciones/{id}/butacas`
+**Respuesta 200:**
 
-- **Acceso propuesto:** público.
-- **Uso:** obtener el plano de butacas de una función con su disponibilidad actual.
-- La disponibilidad se calcula para la combinación de función y butaca. Una butaca física puede estar ocupada en una función y libre en otra.
-- No usar `Butacas.reservada` como indicador global.
+```json
+[
+  {
+    "idFuncion": 250,
+    "fecha": "2026-11-20T00:00:00",
+    "hora": "18:00:00",
+    "subtitulada": false,
+    "idPelicula": 12,
+    "tituloPelicula": "Los autos locos",
+    "idSala": 2,
+    "idIdioma": 1
+  }
+]
+```
 
-Ejemplo de respuesta:
+La respuesta contiene:
+
+| Campo          | Tipo          |
+| -------------- | ------------- |
+| idFuncion      | int           |
+| fecha          | date/datetime |
+| hora           | time          |
+| subtitulada    | bool          |
+| idPelicula     | int           |
+| tituloPelicula | string        |
+| idSala         | int           |
+| idIdioma       | int           |
+
+Las funciones se ordenan por fecha y horario.
+
+Si no hay resultados, devuelve una lista vacía.
+
+El endpoint devuelve funciones pasadas y futuras, incluyendo funciones de películas inactivas.
+
+## 5.3. Consultar butacas de una función
+
+**GET `/api/funciones/{id}/butacas`**
+
+- **Estado:** implementado.
+- **Acceso:** público.
+- **Uso:** consultar las butacas y su disponibilidad para una función.
+
+**Respuesta 200:**
 
 ```json
 [
@@ -225,236 +469,365 @@ Ejemplo de respuesta:
 ]
 ```
 
-## 6. Reservas
+| Campo    | Tipo   |
+| -------- | ------ |
+| idButaca | int    |
+| fila     | string |
+| numero   | int    |
+| ocupada  | bool   |
 
-### 6.1. Crear reserva
+Las butacas se devuelven ordenadas por fila y número.
 
-`POST /api/reservas`
+La disponibilidad se determina mediante la tabla `OcupacionesButacas`, para la combinación de función y butaca.
 
-- **Acceso propuesto:** usuario autenticado con rol `Client`.
-- **Uso:** iniciar una reserva con una o varias butacas.
-- El body contiene solamente los datos elegidos por el usuario: función, butaca y tipo de entrada.
-- No enviar como datos confiables `idCliente`, fecha/hora, estado, precio ni promoción.
-- El backend obtiene el cliente desde el JWT, toma fecha/hora del servidor y calcula precios y promociones.
+No se debe utilizar `Butacas.reservada` como indicador global de disponibilidad.
 
-Body propuesto:
+**Errores:**
 
-```json
-{
-  "detalles": [
-    {
-      "idFuncion": 45,
-      "idButaca": 31,
-      "idTipoEntrada": 1
-    },
-    {
-      "idFuncion": 45,
-      "idButaca": 32,
-      "idTipoEntrada": 2
-    }
-  ]
-}
-```
+| Código | Situación                      |
+| ------ | ------------------------------ |
+| 404    | No existe la función indicada. |
+| 400    | Error durante la consulta.     |
 
-Validaciones mínimas:
-- Que cada función y butaca existan.
-- Que la butaca pertenezca a la sala de esa función.
-- Que las funciones sean válidas y no estén vencidas.
-- Que no haya butacas repetidas dentro de la solicitud.
-- Que cada combinación `(idFuncion, idButaca)` esté disponible.
-- Calcular precio y promociones válidas en backend.
-- Insertar reserva, detalles y ocupaciones dentro de una única transacción.
-- Si otra solicitud ocupa la misma butaca simultáneamente, responder `409 Conflict`.
+---
 
-### 6.2. Cancelar reserva
+# 6. Estadísticas
 
-`PATCH /api/reservas/{id}/cancelar`
+Los siguientes endpoints están implementados y están destinados al panel de administración.
 
-- **Acceso propuesto:** cliente dueño de la reserva o Admin, según reglas del negocio.
-- **Uso:** cancelar una reserva.
-- No requiere enviar el nuevo estado en el body.
-- El backend verifica existencia, propiedad (salvo Admin) y que la reserva todavía pueda cancelarse.
-- No permitir cancelar como pendiente una reserva que ya fue facturada.
-- Al cancelar una reserva no facturada, liberar las ocupaciones correspondientes en `OcupacionesButacas`, conservando los detalles históricos.
+La respuesta utiliza el DTO `EstadisticaItemDto`.
 
-### 6.3. Consultar reservas propias
-
-`GET /api/reservas/mis-reservas`
-
-- **Acceso propuesto:** Client.
-- **Uso:** devolver las reservas del usuario autenticado.
-- El `idCliente` se obtiene del JWT, no de un parámetro manipulable enviado por el frontend.
-
-### 6.4. Consultar todas las reservas
-
-`GET /api/reservas`
-
-- **Acceso propuesto:** Admin.
-- **Uso:** consultar reservas del sistema.
-- Filtros sugeridos: fecha, estado o cliente.
-- Paginación sugerida si el volumen de datos crece.
-
-### 6.5. Confirmar reserva y generar factura
-
-`POST /api/reservas/{id}/confirmar`
-
-- **Acceso propuesto:** dueño de la reserva o Admin, según el flujo de compra.
-- **Uso:** confirmar el pago y generar la factura.
-- El body puede contener `idFormaPago` y, si corresponde, `idCanalVenta`.
-- El backend carga los detalles de la reserva; el frontend no vuelve a enviar precios, funciones ni butacas.
-
-En una sola transacción, el backend debe:
-1. Comprobar que la reserva esté vigente y no facturada.
-2. Verificar que los detalles sigan siendo válidos.
-3. Crear `Factura` y `DetallesFacturas`.
-4. Asociar cada detalle de factura con el detalle de reserva correspondiente.
-5. Actualizar `fechaHoraConfirmacion`.
-6. Completar la referencia a la factura en `OcupacionesButacas`.
-
-La ocupación no se libera: la butaca continúa vendida.
-
-**Body exacto:** el PDF no fija un ejemplo JSON completo. No asumir que solo `idFormaPago` es obligatorio ni inventar propiedades adicionales hasta que backend confirme.
-
-## 7. Facturación y ventas directas
-
-### 7.1. Registrar venta directa
-
-`POST /api/facturas`
-
-- **Acceso propuesto:** Admin o personal autorizado de boletería.
-- **Uso:** registrar una venta directa que no proviene de una reserva web.
-- En este caso puede tener sentido recibir `idCliente`, porque el operador registra una venta para un cliente. Si se admiten ventas anónimas, debe definirse esa regla.
-- Fecha de emisión, precios y promociones se calculan en backend.
-
-Body propuesto:
+Formato general:
 
 ```json
-{
-  "idCliente": 25,
-  "idFormaPago": 1,
-  "idCanalVenta": 1,
-  "detalles": [
-    {
-      "idFuncion": 45,
-      "idButaca": 35,
-      "idTipoEntrada": 1
-    }
-  ]
-}
+[
+  {
+    "etiqueta": "Texto",
+    "valor": 123.4
+  }
+]
 ```
 
-El backend debe validar disponibilidad y crear `Factura`, `DetallesFacturas` y `OcupacionesButacas` dentro de una única transacción. Para una venta directa, `idDetalleReserva` queda `NULL` y la ocupación referencia `idDetalleFactura`.
+## 6.1. Ingresos por mes
 
-### 7.2. Consultar factura
+**GET `/api/estadisticas/ingresos-por-mes`**
 
-`GET /api/facturas/{id}`
+Devuelve los ingresos agrupados por mes de emisión de las facturas.
 
-- **Acceso:** según permisos; debe controlarse que el usuario pueda consultar esa factura.
-- **Uso:** obtener el comprobante.
-- **Respuesta esperada:** datos de factura, cliente, forma/canal de pago y detalles con película, función, sala, butaca, tipo de entrada y precio.
+**Query params:**
 
-**Pendiente:** el PDF recomienda el endpoint, pero no define un JSON de respuesta ni todas las reglas de acceso.
+| Parámetro | Tipo | Obligatorio |
+| --------- | ---- | ----------- |
+| desde     | date | No          |
+| hasta     | date | No          |
 
-## 8. Modelo de ocupación de butacas y concurrencia
+Ejemplo:
 
-La planificación propone una tabla adicional `OcupacionesButacas` que registra una ocupación por cada par de función y butaca, con clave primaria compuesta:
+```http
+GET /api/estadisticas/ingresos-por-mes?desde=2026-01-01&hasta=2026-11-30
+```
 
-| Columna | Clave / nulabilidad |
-|---|---|
-| `idFuncion` | PK, FK |
-| `idButaca` | PK, FK |
-| `idDetalleReserva` | FK, nullable |
-| `idDetalleFactura` | FK, nullable |
+**Respuesta 200:**
 
-Casos contemplados:
-- **Reserva pendiente:** `idDetalleReserva` informado; `idDetalleFactura` `NULL`.
-- **Reserva pagada:** se mantienen ambos vínculos, reserva y factura.
-- **Venta directa:** `idDetalleFactura` informado; `idDetalleReserva` `NULL`.
-- **Cancelación o expiración antes del pago:** se elimina la ocupación, pero se conserva el detalle histórico de la reserva.
+```json
+[
+  {
+    "etiqueta": "2026-03",
+    "valor": 1520000.0
+  }
+]
+```
 
-La clave primaria compuesta impide dos ocupaciones para la misma butaca en la misma función. La inserción de reserva, detalles y ocupaciones debe ser transaccional. El backend debe capturar el conflicto por clave duplicada y traducirlo a HTTP `409`.
+Si no hay datos, devuelve `[]`.
 
-Se recomienda dejar de utilizar `Butacas.reservada` como indicador de disponibilidad, porque no distingue funciones. La disponibilidad se obtiene consultando `OcupacionesButacas` por `idFuncion`.
+Si la fecha inicial es posterior a la fecha final, devuelve `400`.
 
-**Cambio de base de datos requerido:** `OcupacionesButacas` no forma parte de las 24 tablas del SQL original documentado en `database.md`. Debe incorporarse al esquema y a las entidades/configuración EF Core antes de depender de este mecanismo. Este documento registra la propuesta del PDF; no implica que la tabla ya exista.
+## 6.2. Top de películas
 
-## 9. Expiración de reservas
+**GET `/api/estadisticas/top-peliculas`**
 
-La planificación establece que las reservas no confirmadas expiran dos horas antes de la función. Para cumplirlo se necesita un proceso automático del backend (por ejemplo, un servicio en segundo plano o tarea programada); no alcanza con liberar butacas cuando un usuario vuelve a consultar.
+Devuelve las películas con mayor cantidad de entradas vendidas.
 
-**Caso que debe definirse:** si una reserva contiene detalles correspondientes a funciones con distintos horarios, cada función puede comenzar en un momento diferente. Para liberar cada butaca exactamente dos horas antes de su función, el estado a nivel de reserva puede ser insuficiente. El PDF propone dos alternativas:
-- Agregar estado/fecha de expiración por detalle de reserva.
-- Definir explícitamente que toda la reserva se cancela como una unidad.
+**Query params:**
 
-Al expirar:
-- Marcar el registro o detalle como vencido y liberar su fila de `OcupacionesButacas`.
-- No borrar los detalles históricos de la reserva.
-- No liberar una ocupación que ya tenga factura asociada.
-- Hacer el proceso idempotente: ejecutarlo varias veces no debe generar inconsistencias.
+| Parámetro | Tipo | Valor predeterminado |
+| --------- | ---- | -------------------- |
+| top       | int  | 10                   |
 
-**Relación con `Reservas.estado`:** en la aclaración previa del backend se indicó que `0` significa cancelada y `1` no cancelada, y que una reserva nueva se crea con `true`. Eso no define por sí solo cómo distinguir pendiente, confirmada, vencida y cancelada. Debe acordarse cómo se representará la expiración y el pago sin contradecir esa semántica.
+El parámetro `top` debe estar entre 1 y 50.
 
-## 10. Resumen de endpoints propuestos
+Ejemplo:
 
-| Método | Ruta | Acceso propuesto | Propósito |
-|---|---|---|---|
-| GET | `/api/peliculas` | Público | Listado/catálogo |
-| GET | `/api/peliculas/{id}` | Público | Detalle de película |
-| POST | `/api/peliculas` | Admin | Alta de película y relaciones |
-| PUT | `/api/peliculas/{id}/estado` | Admin | Activar/desactivar |
-| POST | `/api/funciones` | Admin | Programar función |
-| GET | `/api/funciones` | Público | Consultar funciones |
-| GET | `/api/funciones/{id}/butacas` | Público | Disponibilidad de butacas |
-| POST | `/api/reservas` | Client | Crear reserva |
-| PATCH | `/api/reservas/{id}/cancelar` | Dueño/Admin | Cancelar reserva |
-| GET | `/api/reservas/mis-reservas` | Client | Reservas propias |
-| GET | `/api/reservas` | Admin | Consultar reservas |
-| POST | `/api/reservas/{id}/confirmar` | Dueño/Admin | Pagar y facturar reserva |
-| POST | `/api/facturas` | Admin/Personal autorizado | Venta directa |
-| GET | `/api/facturas/{id}` | Según permisos | Consultar comprobante |
+```http
+GET /api/estadisticas/top-peliculas?top=5
+```
 
-Las rutas y permisos son propuestas de la planificación; deben cotejarse con las rutas reales de Swagger/OpenAPI cuando backend las publique.
+**Respuesta 200:**
 
-## 11. Diferencias y dependencias respecto del esquema SQL documentado
+```json
+[
+  {
+    "etiqueta": "Los autos locos",
+    "valor": 124
+  }
+]
+```
 
-1. **`OcupacionesButacas`:** tabla nueva propuesta por el PDF; no está en las 24 tablas del SQL original. Requiere cambio de esquema, claves foráneas y clave primaria compuesta `(idFuncion, idButaca)`.
-2. **`Peliculas.Activa`:** el PDF confirma que debe agregarse si todavía no existe. No figura en el SQL original documentado.
-3. **`Butacas.reservada`:** no debe usarse como disponibilidad global. La disponibilidad se calcula por función y butaca mediante ocupaciones.
-4. **`Reservas.estado`:** se informó que `0` es cancelada y `1` no cancelada. La expiración y la confirmación de pago necesitan una definición de estado complementaria o reglas adicionales.
-5. **Venta directa:** el PDF propone que el frontend de boletería envíe `idCliente` si corresponde; definir si se permiten ventas anónimas.
-6. **Roles:** están propuestos `Admin` y `Client`; falta definir el rol/permisos concretos de personal de boletería.
-7. **Formato 2D/3D:** según la aclaración del backend, corresponde a `Salas`, no a `Peliculas` ni a `Funciones`. El frontend puede derivarlo de la sala asociada a la función, siempre que la API exponga ese dato.
-8. **Registro/login:** el PDF describe criterios JWT, pero no define rutas ni DTOs completos.
-9. **Expiración:** falta decidir si una reserva con funciones de distintos horarios expira como unidad o por detalle.
+Si no hay datos, devuelve `[]`.
 
-## 12. Pendientes de confirmación antes de integrar el frontend
+## 6.3. Ocupación por horario
 
-- Rutas definitivas y nombres exactos de todos los endpoints.
-- DTOs finales de request y response, incluidos campos opcionales y formatos de fecha/hora.
-- Contrato de registro y login; estructura del JWT, claims, expiración y eventual refresh.
-- Confirmar si el catálogo y las funciones serán públicos.
-- Confirmar rol y permisos del personal de boletería.
-- Confirmar si se permiten ventas anónimas.
-- Incorporar `Peliculas.Activa` al esquema o documentar la alternativa.
-- Incorporar `OcupacionesButacas` y su configuración EF Core.
-- Definir estados de reserva, expiración y confirmación sin ambigüedades.
-- Definir cómo se expiran reservas que contienen funciones con distintos horarios.
-- Definir el body de confirmación de reserva y la respuesta de creación de reserva/venta.
-- Definir la respuesta de `GET /api/facturas/{id}` y quién puede consultarla.
-- Confirmar filtros, paginación y ordenamiento de listados.
-- Publicar Swagger/OpenAPI actualizado para que el frontend consuma el contrato real.
+**GET `/api/estadisticas/ocupacion-por-horario`**
 
-## 13. Instrucciones para agentes de IA
+Devuelve el porcentaje de ocupación agrupado por horario.
 
-Al implementar el frontend:
-1. Leer `AGENTS.md`, `docs/requirements.md`, `docs/database.md` y este documento antes de realizar cambios relacionados con la API.
-2. Tratar las rutas y DTOs de este documento como planificación, no como garantía de que ya están implementados.
-3. No inventar endpoints, parámetros, propiedades JSON, respuestas ni códigos HTTP.
-4. No enviar desde React `idCliente`, roles, precios, descuentos o estados como datos confiables en operaciones autenticadas.
-5. Obtener el token y la identidad del usuario según el contrato real de autenticación que confirme backend.
-6. Mantener las llamadas HTTP en la capa de servicios, separadas de los componentes visuales.
-7. Mantener mocks separados de las llamadas reales; no presentar mocks como respuestas del servidor.
-8. No considerar exitosa una reserva, cancelación, confirmación o compra hasta recibir una respuesta satisfactoria de la API.
-9. Manejar `401`, `403`, `404` y especialmente `409 Conflict` en la selección y compra de butacas.
-10. Si falta un dato o hay una contradicción entre este documento, `database.md` y Swagger, detenerse y señalar el punto pendiente en vez de asumir una solución.
-11. El contrato definitivo de Swagger/OpenAPI y las decisiones confirmadas por backend prevalecen sobre esta planificación.
+**Query params:**
+
+| Parámetro | Tipo | Obligatorio |
+| --------- | ---- | ----------- |
+| desde     | date | No          |
+| hasta     | date | No          |
+
+Ejemplo:
+
+```http
+GET /api/estadisticas/ocupacion-por-horario?desde=2026-01-01&hasta=2026-11-30
+```
+
+**Respuesta 200:**
+
+```json
+[
+  {
+    "etiqueta": "15:00",
+    "valor": 42.5
+  },
+  {
+    "etiqueta": "18:00",
+    "valor": 71.0
+  },
+  {
+    "etiqueta": "22:00",
+    "valor": 55.3
+  }
+]
+```
+
+El valor representa un porcentaje de ocupación entre 0 y 100.
+
+Sin parámetros, calcula sobre todas las funciones de la base de datos.
+
+Si no hay datos, devuelve los horarios contemplados por el servicio.
+
+## 6.4. Uso de promociones
+
+**GET `/api/estadisticas/uso-promociones`**
+
+Devuelve la cantidad de entradas vendidas asociadas a cada promoción.
+
+No recibe parámetros.
+
+**Respuesta 200:**
+
+```json
+[
+  {
+    "etiqueta": "Miércoles 10% de descuento",
+    "valor": 480
+  },
+  {
+    "etiqueta": "Función Noche 10% de descuento",
+    "valor": 310
+  }
+]
+```
+
+Solo aparecen promociones que registran al menos un uso.
+
+Si no hay datos, devuelve `[]`.
+
+---
+
+# 7. Endpoints y funcionalidades pendientes
+
+Las siguientes funcionalidades forman parte del sistema, pero no tienen actualmente un controlador HTTP implementado en el backend de la rama revisada.
+
+No consumir estas rutas desde el frontend hasta que backend las implemente y confirme sus contratos.
+
+## 7.1. Reservas
+
+Todavía no se encuentra implementado un controlador de reservas.
+
+Rutas previstas para una futura implementación:
+
+| Método | Ruta propuesta                 | Propósito                                       |
+| ------ | ------------------------------ | ----------------------------------------------- |
+| POST   | `/api/reservas`                | Crear una reserva.                              |
+| GET    | `/api/reservas/mis-reservas`   | Consultar las reservas del usuario autenticado. |
+| GET    | `/api/reservas`                | Consultar reservas del sistema.                 |
+| PATCH  | `/api/reservas/{id}/cancelar`  | Cancelar una reserva.                           |
+| POST   | `/api/reservas/{id}/confirmar` | Confirmar una reserva y generar su factura.     |
+
+Estas rutas son propuestas y no deben considerarse endpoints disponibles.
+
+### Consideraciones para su futura implementación
+
+- El cliente debe obtenerse del usuario autenticado, no de un `idCliente` enviado libremente por React.
+- El backend debe validar la disponibilidad de cada butaca.
+- Una butaca debe estar asociada a la sala de la función seleccionada.
+- Los precios y descuentos deben calcularse en el backend.
+- La operación debe manejarse mediante transacciones.
+- Los conflictos de disponibilidad deberían responder con `409 Conflict`.
+- La expiración y cancelación deben liberar las ocupaciones correspondientes sin borrar el historial.
+
+## 7.2. Facturación
+
+Actualmente no se encuentra implementado un controlador de facturas.
+
+Rutas previstas:
+
+| Método | Ruta propuesta       | Propósito                    |
+| ------ | -------------------- | ---------------------------- |
+| POST   | `/api/facturas`      | Registrar una venta directa. |
+| GET    | `/api/facturas/{id}` | Consultar una factura.       |
+
+Los contratos definitivos de request, response y permisos deben confirmarse cuando se implemente esta funcionalidad.
+
+El esquema permite distinguir ventas provenientes de reservas de ventas directas:
+
+- `Facturas.idReserva` puede ser `NULL`.
+- `DetallesFacturas.idDetalleReserva` puede ser `NULL`.
+
+## 7.3. Clientes y registro
+
+El backend dispone de lógica de clientes utilizada por el login, pero actualmente no se encuentra un controlador de clientes con endpoints públicos de registro, consulta o edición.
+
+No asumir que existen rutas como `/api/clientes`, `/api/registro` o similares hasta que se publiquen en Swagger.
+
+---
+
+# 8. Resumen de endpoints disponibles
+
+| Método | Ruta                                      | Estado       | Acceso previsto                      |
+| ------ | ----------------------------------------- | ------------ | ------------------------------------ |
+| POST   | `/api/login`                              | Implementado | Público                              |
+| GET    | `/api/peliculas`                          | Implementado | Público                              |
+| GET    | `/api/peliculas/{id}`                     | Implementado | Sin restricción aplicada actualmente |
+| POST   | `/api/peliculas`                          | Implementado | Admin previsto                       |
+| PUT    | `/api/peliculas/{id}/estado`              | Implementado | Admin previsto                       |
+| POST   | `/api/funciones`                          | Implementado | Admin previsto                       |
+| GET    | `/api/funciones`                          | Implementado | Público                              |
+| GET    | `/api/funciones/{id}/butacas`             | Implementado | Público                              |
+| GET    | `/api/estadisticas/ingresos-por-mes`      | Implementado | Admin previsto                       |
+| GET    | `/api/estadisticas/top-peliculas`         | Implementado | Admin previsto                       |
+| GET    | `/api/estadisticas/ocupacion-por-horario` | Implementado | Admin previsto                       |
+| GET    | `/api/estadisticas/uso-promociones`       | Implementado | Admin previsto                       |
+| POST   | `/api/reservas`                           | Pendiente    | Por definir                          |
+| GET    | `/api/reservas/mis-reservas`              | Pendiente    | Por definir                          |
+| GET    | `/api/reservas`                           | Pendiente    | Por definir                          |
+| PATCH  | `/api/reservas/{id}/cancelar`             | Pendiente    | Por definir                          |
+| POST   | `/api/reservas/{id}/confirmar`            | Pendiente    | Por definir                          |
+| POST   | `/api/facturas`                           | Pendiente    | Por definir                          |
+| GET    | `/api/facturas/{id}`                      | Pendiente    | Por definir                          |
+
+---
+
+# 9. Consideraciones de integración con el frontend
+
+## 9.1. Organización de las llamadas HTTP
+
+Las llamadas a la API deben mantenerse en una capa de servicios, separadas de los componentes visuales.
+
+Se recomienda:
+
+- Centralizar la configuración de Axios.
+- Definir una instancia común con la URL base.
+- Incorporar el token JWT mediante interceptores cuando corresponda.
+- Mantener un servicio por dominio o funcionalidad.
+- Evitar realizar llamadas HTTP directamente desde componentes de presentación.
+
+## 9.2. Autenticación
+
+El frontend debe:
+
+1. Enviar las credenciales a `POST /api/login`.
+2. Obtener el token y los datos del usuario.
+3. Mantener el estado de autenticación en el contexto correspondiente.
+4. Enviar el token en el header `Authorization` cuando el endpoint lo requiera.
+5. Gestionar la expiración del token.
+6. Diferenciar usuarios administradores de clientes utilizando los datos devueltos por el backend.
+
+La interfaz puede controlar la navegación por roles, pero eso no reemplaza la autorización del servidor.
+
+## 9.3. Manejo de errores
+
+El frontend debe contemplar:
+
+- `400`: mostrar errores de validación.
+- `401`: gestionar la sesión o las credenciales.
+- `403`: informar que el usuario no tiene permisos.
+- `404`: informar que el recurso solicitado no existe.
+- `409`: informar conflictos de disponibilidad o estado.
+- `500`: mostrar un mensaje genérico de error del servidor.
+
+No asumir que todos los errores devuelven JSON con una propiedad `message`.
+
+## 9.4. Películas y funciones
+
+Para construir la cartelera:
+
+1. Consultar `GET /api/peliculas`.
+2. Filtrar las películas según su propiedad `activa`.
+3. Consultar `GET /api/funciones` con los filtros necesarios.
+4. Relacionar las funciones con sus películas.
+5. Mostrar horarios y datos de las funciones disponibles.
+
+El detalle de película puede utilizar `GET /api/peliculas/{id}`.
+
+## 9.5. Selección de butacas
+
+Para mostrar el plano de butacas:
+
+1. Obtener el identificador de la función seleccionada.
+2. Consultar `GET /api/funciones/{id}/butacas`.
+3. Renderizar las butacas según `fila`, `numero` y `ocupada`.
+4. Impedir que el usuario seleccione butacas que ya estén ocupadas.
+5. Volver a validar la disponibilidad al momento de crear una reserva, cuando ese endpoint esté implementado.
+
+La disponibilidad mostrada en pantalla no garantiza que una butaca siga libre cuando se intente reservar.
+
+---
+
+# 10. Consideraciones técnicas pendientes del backend
+
+Antes de considerar completa la integración del frontend, deben revisarse los siguientes puntos:
+
+1. **Autorización:** habilitar los atributos `[Authorize]` y `[Authorize(Roles = "Admin")]` correspondientes. Actualmente hay restricciones comentadas.
+2. **CORS:** configurar una política que permita las solicitudes desde el origen utilizado por Vite durante el desarrollo.
+3. **Login:** mantener la clave de firma JWT fuera del código fuente y utilizar configuración segura.
+4. **Reservas:** implementar el controlador, DTOs, servicios y repositorios correspondientes.
+5. **Facturación:** implementar los endpoints y definir sus DTOs.
+6. **Clientes:** definir si se necesita un endpoint de registro y qué información podrá consultar o modificar el cliente.
+7. **Swagger:** mantener la documentación actualizada con los contratos reales de request y response.
+8. **Errores:** procurar que los errores tengan formatos consistentes para facilitar su manejo desde React.
+
+---
+
+# 11. Instrucciones para agentes de IA
+
+Al desarrollar o modificar el frontend:
+
+1. Leer `agents.md`, `docs/database.md` y este documento antes de trabajar con la API.
+2. Respetar los nombres de propiedades y estructuras JSON definidos por los DTOs actuales.
+3. No inventar endpoints ni asumir que las rutas pendientes ya están implementadas.
+4. No enviar información sensible o datos que deban ser determinados por el servidor como si fueran confiables.
+5. No calcular precios, descuentos ni disponibilidad definitiva desde React.
+6. Mantener las llamadas HTTP separadas de los componentes visuales.
+7. No reemplazar silenciosamente las llamadas reales por mocks.
+8. No considerar exitosa una operación hasta recibir una respuesta satisfactoria del backend.
+9. Manejar correctamente los errores HTTP.
+10. Si falta un contrato o existe una contradicción entre este documento y el código, señalarlo antes de implementar una solución.
+11. Considerar Swagger y los DTOs del backend como referencia para los contratos efectivamente implementados.
+12. Mantener separados los contratos implementados y las propuestas de funcionalidades futuras.
+
+**Regla principal:** el frontend debe adaptarse al contrato real del backend. No debe inventar ni asumir comportamientos que el servidor todavía no ofrece.

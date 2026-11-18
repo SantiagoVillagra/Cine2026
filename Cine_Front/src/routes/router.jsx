@@ -9,6 +9,7 @@ import HomePage from '../pages/public/HomePage.jsx';
 import MovieDetailPage from '../pages/public/MovieDetailPage.jsx';
 import DashboardPage from '../pages/admin/DashboardPage.jsx';
 import LoginPage from '../pages/auth/LoginPage.jsx';
+import SeatSelectionPage from '../pages/client/SeatSelectionPage.jsx';
 
 const routes = [
   {
@@ -34,7 +35,7 @@ const routes = [
           { path: '/cliente/reservas', element: <PlaceholderPage title='Mis reservas' /> },
           {
             path: '/cliente/reservar/:funcionId',
-            element: <PlaceholderPage title='Reserva de función' />,
+            element: <SeatSelectionPage />,
           },
           {
             path: '/cliente/mis-compras',

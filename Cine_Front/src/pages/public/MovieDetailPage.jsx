@@ -1,96 +1,136 @@
-import { ArrowLeft, Clock3 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowLeft, Clapperboard, Clock3 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
-import { Badge, Button, Card, EmptyState, PageHeader } from '../../components/common/index.js'
-import { publicCatalogMock } from '../../mocks/publicCatalog.js'
+import { Badge, Button, Card, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
+import { getMovieById, getShowtimes } from '../../services/publicCatalogService.js'
+import { getAsyncState } from '../../utils/asyncState.js'
+import { formatShowtimeDate, formatShowtimeTime, mapMovie, mapShowtimes } from '../../utils/publicCatalog.js'
+import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 
 function MovieDetailPage() {
   const { id } = useParams()
-  const movie = publicCatalogMock.find((item) => String(item.idPelicula) === id)
+  const [movieRetryKey, setMovieRetryKey] = useState(0)
+  const [showtimesRetryKey, setShowtimesRetryKey] = useState(0)
+  const [movieState, setMovieState] = useState({ requestKey: null, isLoading: true, error: null, data: null })
+  const [showtimesState, setShowtimesState] = useState({ requestKey: null, isLoading: true, error: null, data: [] })
+  const movieRequestKey = `${id}:${movieRetryKey}`
+  const showtimesRequestKey = `${id}:${showtimesRetryKey}`
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    getMovieById(id, { signal: controller.signal })
+      .then((movie) => {
+        if (!controller.signal.aborted) setMovieState({ requestKey: movieRequestKey, isLoading: false, error: null, data: mapMovie(movie) })
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) setMovieState({ requestKey: movieRequestKey, isLoading: false, error, data: null })
+      })
+
+    return () => controller.abort()
+  }, [id, movieRequestKey])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    getShowtimes({ movieId: id, signal: controller.signal })
+      .then((showtimes) => {
+        if (!controller.signal.aborted) setShowtimesState({ requestKey: showtimesRequestKey, isLoading: false, error: null, data: mapShowtimes(showtimes) })
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) setShowtimesState({ requestKey: showtimesRequestKey, isLoading: false, error, data: [] })
+      })
+
+    return () => controller.abort()
+  }, [id, showtimesRequestKey])
+
+  const currentMovieState = movieState.requestKey === movieRequestKey
+    ? movieState
+    : { isLoading: true, error: null, data: null }
+  const currentShowtimesState = showtimesState.requestKey === showtimesRequestKey
+    ? showtimesState
+    : { isLoading: true, error: null, data: [] }
+  const movieStatus = getAsyncState(currentMovieState)
+  const isNotFound = currentMovieState.error?.response?.status === 404
+  const movie = currentMovieState.data
 
   return (
     <main>
       <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-        <Link
-          to="/#cartelera"
-          className="inline-flex min-h-10 items-center gap-2 rounded-md text-sm font-medium text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-offset-4"
-        >
-          <ArrowLeft size={16} aria-hidden="true" />
-          Volver a la cartelera
+        <Link to="/#cartelera" className="inline-flex min-h-10 items-center gap-2 rounded-md text-sm font-medium text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-offset-4">
+          <ArrowLeft size={16} aria-hidden="true" /> Volver a la cartelera
         </Link>
 
-        {!movie ? (
+        {movieStatus === 'loading' && <div className="flex justify-center py-16"><Loading text="Cargando película…" /></div>}
+        {movieStatus === 'error' && (
           <EmptyState
-            title="No encontramos esa película"
-            description={`El ID “${id}” no corresponde a ninguna película de la cartelera de muestra.`}
-            action={(
-              <Link to="/#cartelera">
-                <Button variant="outline">Ver cartelera</Button>
-              </Link>
-            )}
+            title={isNotFound ? 'No encontramos esa película' : 'No se pudo cargar la película'}
+            description={isNotFound ? `El ID “${id}” no corresponde a una película disponible.` : getApiErrorMessage(currentMovieState.error)}
+            action={isNotFound ? <Link to="/#cartelera"><Button variant="outline">Ver cartelera</Button></Link> : <Button onClick={() => setMovieRetryKey((key) => key + 1)}>Reintentar</Button>}
           />
-        ) : (
+        )}
+
+        {movieStatus === 'success' && movie && (
           <>
-            <div className="flex flex-col gap-6">
-            <PageHeader
-              title={movie.titulo}
-              description="Detalle de película · Cartelera de muestra"
-              actions={<Badge variant="info">Datos ilustrativos</Badge>}
-            />
+            <PageHeader title={movie.title} description="Detalle de película" actions={<Badge variant="info">Información de API</Badge>} />
 
             <div className="grid items-start gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-12">
-              <div className="mx-auto w-full max-w-sm overflow-hidden rounded-xl border border-border bg-surface shadow-2xl shadow-black/30">
-                <img
-                  src={movie.poster}
-                  alt={`Afiche ilustrativo de ${movie.titulo}`}
-                  className="block aspect-[2/3] w-full object-cover"
-                />
+              <div className="mx-auto grid aspect-[2/3] w-full max-w-sm place-items-center overflow-hidden rounded-xl border border-border bg-surface-secondary shadow-2xl shadow-black/30">
+                {movie.poster ? (
+                  <img src={movie.poster} alt={`Afiche de ${movie.title}`} className="block size-full object-cover" />
+                ) : (
+                  <div className="grid justify-items-center gap-3 text-text-secondary" role="img" aria-label={`Afiche no disponible para ${movie.title}`}>
+                    <Clapperboard size={44} aria-hidden="true" />
+                    <span className="text-sm">Afiche no disponible</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-6">
                 <Card className="flex flex-col gap-4">
                   <div className="flex flex-wrap gap-2">
-                    {movie.generos.map((genre) => <Badge key={genre}>{genre}</Badge>)}
-                    {movie.clasificacion && <Badge variant="warning">{movie.clasificacion}</Badge>}
-                    {movie.duracion && <Badge variant="default">{movie.duracion} min</Badge>}
+                    {movie.classificationId != null && <Badge variant="warning">Clasificación #{movie.classificationId}</Badge>}
+                    {movie.duration != null && <Badge variant="default">{movie.duration} min</Badge>}
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold text-text-primary">Sinopsis</h2>
-                    <p className="mt-2 text-sm leading-7 text-text-secondary">{movie.sinopsis}</p>
+                    <p className="mt-2 text-sm leading-7 text-text-secondary">{movie.synopsis || 'Sinopsis no disponible.'}</p>
                   </div>
                 </Card>
 
-                <section className="space-y-4" aria-labelledby="showtimes-heading">
+                <section id="funciones" className="scroll-mt-24 space-y-4" aria-labelledby="showtimes-heading">
                   <div>
-                    <h2 id="showtimes-heading" className="text-xl font-semibold text-text-primary">Funciones de muestra</h2>
-                    <p className="mt-1 text-sm text-text-secondary">
-                      Horarios y salas ilustrativos; no representan disponibilidad para reservar.
-                    </p>
+                    <h2 id="showtimes-heading" className="text-xl font-semibold text-text-primary">Funciones</h2>
+                    <p className="mt-1 text-sm text-text-secondary">Horarios informados para esta película. La disponibilidad de butacas se consulta por separado.</p>
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {movie.funciones.map((showtime) => (
-                      <Card key={showtime.idFuncion} padding="small" className="space-y-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="inline-flex items-center gap-2 text-lg font-semibold tabular-nums text-text-primary">
-                            <Clock3 size={17} className="text-primary" aria-hidden="true" />
-                            {showtime.hora}
-                          </span>
-                          <Badge variant="info">{showtime.sala.formato}</Badge>
-                        </div>
-                        <div className="flex flex-col gap-4">
+
+                  {getAsyncState(currentShowtimesState) === 'loading' && <div className="flex justify-center py-8"><Loading text="Cargando funciones…" /></div>}
+                  {getAsyncState(currentShowtimesState) === 'error' && (
+                    <EmptyState title="No se pudieron cargar las funciones" description={getApiErrorMessage(currentShowtimesState.error)} action={<Button variant="outline" onClick={() => setShowtimesRetryKey((key) => key + 1)}>Reintentar</Button>} />
+                  )}
+                  {getAsyncState(currentShowtimesState) === 'empty' && <EmptyState title="No hay funciones programadas" description="La API no devolvió funciones para esta película." />}
+                  {getAsyncState(currentShowtimesState) === 'success' && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {currentShowtimesState.data.map((showtime) => (
+                        <Card key={showtime.id} padding="small" className="space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="inline-flex items-center gap-2 text-lg font-semibold tabular-nums text-text-primary">
+                              <Clock3 size={17} className="text-primary" aria-hidden="true" /> {formatShowtimeTime(showtime.time)}
+                            </span>
+                            <Badge variant="info">Sala {showtime.roomId}</Badge>
+                          </div>
                           <p className="text-sm text-text-secondary">
-                            {showtime.sala.nombre} · {showtime.idioma}
-                            {showtime.subtitulada ? ' · subtitulada' : ''}
+                            {formatShowtimeDate(showtime.date)} · Idioma {showtime.languageId}{showtime.isSubtitled ? ' · subtitulada' : ''}
                           </p>
-                          <Link to={`/cliente/reservar/${showtime.idFuncion}`}>
+                          <Link to={`/cliente/reservar/${showtime.id}`} state={{ showtime }}>
                             <Button className="w-full">Elegir butacas</Button>
                           </Link>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </section>
               </div>
-            </div>
             </div>
           </>
         )}
