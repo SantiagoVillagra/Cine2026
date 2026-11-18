@@ -8,6 +8,7 @@ import ProtectedRoute from './ProtectedRoute.jsx';
 import HomePage from '../pages/public/HomePage.jsx';
 import MovieDetailPage from '../pages/public/MovieDetailPage.jsx';
 import DashboardPage from '../pages/admin/DashboardPage.jsx';
+import LoginPage from '../pages/auth/LoginPage.jsx';
 
 const routes = [
   {
@@ -22,7 +23,7 @@ const routes = [
   },
   {
     element: <AuthLayout />,
-    children: [{ path: '/login', element: <PlaceholderPage title='Iniciar sesión' /> }],
+    children: [{ path: '/login', element: <LoginPage /> }],
   },
   {
     element: <ProtectedRoute role='Client' />,
