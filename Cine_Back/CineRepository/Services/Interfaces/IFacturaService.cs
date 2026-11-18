@@ -10,8 +10,8 @@ namespace CineRepository.Services.Interfaces
 {
     public interface IFacturaService
     {
-        Task<Factura?> CrearVentaDirectaAsync(PostFacturaDto factura);
-        Task<Factura?> CrearVentaPorReservaAsync(Factura factura);
+        Task<Factura> CrearVentaDirectaAsync(PostFacturaDto factura);
+        Task CrearVentaPorReservaAsync(Factura factura);
         Task<Factura?> TraerPorIdAsync(int idFactura, int idCliente, bool esAdmin);
     }
 }

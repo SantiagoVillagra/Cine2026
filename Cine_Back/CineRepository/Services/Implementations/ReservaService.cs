@@ -14,7 +14,6 @@ namespace CineRepository.Services.Implementations
     public class ReservaService : IReservaService
     {
         private readonly IReservaRepository _reservaRepository;
-        //private readonly IOcupacionButacaRepository _ocupacionRepository;
         private readonly IFacturaRepository _facturaRepository;
         private readonly IUnitOfWork _unitOfWork;
 
@@ -44,22 +43,14 @@ namespace CineRepository.Services.Implementations
 
             try
             {
-                //await _ocupacionRepository.DeleteByReservaAsync(idReserva);
-
-                /*
-                
-                foreach (DetalleReserva dr in r.DetallesReservas)
-                {
-                    OcupacionButaca? ocupReservada = _context.OcupacionesButacas.FirstOrDefault(ob => ob.IdFuncion == df.IdFuncion && ob.IdButaca == df.IdButaca);
-                    _context.OcupacionesButacas.Remove(ocupReservada);
-                }
-                */
+                await _reservaRepository.DeleteByReservaAsync(idReserva);
 
                 r.Estado = false;
 
                 await _unitOfWork.SaveChangesAsync();
 
                 await _unitOfWork.CommitAsync();
+                return true;
             }
             catch (Exception)
             {
@@ -113,24 +104,18 @@ namespace CineRepository.Services.Implementations
                     IdCanalVenta = dto.IdCanalVenta,
                     DetallesFacturas = detalles
                 };
-                Factura fcCreada = await _facturaRepository.PostVentaPorReservaAsync(f); //Crear la factura
+                await _facturaRepository.PostVentaPorReservaAsync(f); //Crear la factura
 
-                //await _ocupacionRepository.UpdateWithFacturaAsync(); //Completar la column idDetalleFc en Ocp.But.}
+                await _unitOfWork.SaveChangesAsync();
 
-                /*
-                
-                foreach (DetalleFactura df in fcCreada.DetallesFacturas)
-                {
-                    OcupacionButaca? ocupReservada = _context.OcupacionesButacas.FirstOrDefault(ob => ob.IdFuncion == df.IdFuncion && ob.IdButaca == df.IdButaca);
-                    ocupReservada.IdDetalleFactura = df.IdDetalleFactura;
-                }
-                */
+                await _reservaRepository.UpdateOcupWithFacturaAsync(idReserva, f.DetallesFacturas.ToList()); //Completar la column idDetalleFc en Ocp.But.}
 
                 r.FechaHoraConfirmacion = DateTime.Now;
 
                 await _unitOfWork.SaveChangesAsync();
 
                 await _unitOfWork.CommitAsync();
+                return f;
             }
             catch
             {
@@ -146,7 +131,6 @@ namespace CineRepository.Services.Implementations
 
             try
             {
-                //await _ocupacionRepository.PostWithReservaAsync(); //Ocupar las butacas reservadas
                 List<DetalleReserva> detalles = new List<DetalleReserva>();
                 foreach (DetalleReservaDto drDto in detallesDto.Detalles)
                 {
@@ -154,8 +138,8 @@ namespace CineRepository.Services.Implementations
                         IdFuncion = drDto.IdFuncion,
                         IdButaca = drDto.IdButaca,
                         IdTipoEntrada = drDto.IdTipoEntrada,
-                        //Precio = await _reservaRepository.GetPrecioDetall(sp_precioDetalle), //CON ID FUNCION -> IDSALA -> PRECIO -> CON IDTIPOENTRADA DESC. DE ENTRADA
-                        //IdPromocion = await _reservaRepository.GetPromoDetalle(sp_promoDetalle) //CON IDFUNCION -> FECHA Y IDHORA -> 
+                        Precio = drDto.Precio, //CON ID FUNCION -> IDSALA -> PRECIO -> CON IDTIPOENTRADA DESC. DE ENTRADA
+                        IdPromocion = drDto.IdPromocion //CON IDFUNCION -> FECHA Y IDHORA -> 
                     };
 
                     detalles.Add(det);
@@ -171,9 +155,10 @@ namespace CineRepository.Services.Implementations
 
                 await _reservaRepository.PostReservaAsync(r); //recuperar la reserva
 
+                await _unitOfWork.SaveChangesAsync();
+
                 //CREAR LA OCUPACIONDE BUTACAS:
-                //await _ocupacionRepository.PostByReservaAsync();
-                //
+                                
                 List<OcupacionButaca> lstOcupacion = new List<OcupacionButaca>();
                 foreach (DetalleReserva dr in r.DetallesReservas)
                 {
@@ -185,15 +170,12 @@ namespace CineRepository.Services.Implementations
                     };
                     lstOcupacion.Add(ob);
                 }
-                //await _ocupacionRepository.PostByReservaAsync(ob);
-                /*
-                 await _context.OcupacionesButacas.AddRange(ob);
-                */
+                await _reservaRepository.PostOcupByReservaAsync(lstOcupacion);
 
                 await _unitOfWork.SaveChangesAsync();
 
                 await _unitOfWork.CommitAsync();
-                return r; //Corregir, capturamos el último insert o devolvemos un bool?
+                return r;
             }
             catch
             {

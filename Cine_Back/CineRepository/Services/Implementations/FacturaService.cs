@@ -13,14 +13,16 @@ namespace CineRepository.Services.Implementations
     public class FacturaService : IFacturaService
     {
         private readonly IFacturaRepository _facturaRepository;
+        private readonly IReservaRepository _reservaRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public FacturaService(IFacturaRepository facturaRepository, IUnitOfWork unitOfWork)
+        public FacturaService(IFacturaRepository facturaRepository, IReservaRepository reservaRepository, IUnitOfWork unitOfWork)
         {
             _facturaRepository = facturaRepository;
+            _reservaRepository = reservaRepository;
             _unitOfWork = unitOfWork;
         }
-        public async Task<Factura?> CrearVentaDirectaAsync(PostFacturaDto factura)
+        public async Task<Factura> CrearVentaDirectaAsync(PostFacturaDto factura)
         {
             await _unitOfWork.BeginTransactionAsync();
 
@@ -34,8 +36,8 @@ namespace CineRepository.Services.Implementations
                         IdFuncion = drDto.IdFuncion,
                         IdButaca = drDto.IdButaca,
                         IdTipoEntrada = drDto.IdTipoEntrada,
-                        //PrecioUnitario = await _reservaRepository.GetPrecioDetall(sp_precioDetalle), //CON ID FUNCION -> IDSALA -> PRECIO -> CON IDTIPOENTRADA DESC. DE ENTRADA
-                        //IdPromocion = await _reservaRepository.GetPromoDetalle(sp_promoDetalle) //CON IDFUNCION -> FECHA Y IDHORA -> 
+                        PrecioUnitario = drDto.Precio, //CON ID FUNCION -> IDSALA -> PRECIO -> CON IDTIPOENTRADA DESC. DE ENTRADA
+                        IdPromocion = drDto.IdPromocion //CON IDFUNCION -> FECHA Y IDHORA -> 
                     };
 
                     detalles.Add(det);
@@ -47,44 +49,43 @@ namespace CineRepository.Services.Implementations
                     IdCliente = factura.IdCliente,
                     IdFormaPago = factura.IdFormaPago,
                     IdCanalVenta = factura.IdCanalVenta,
+                    IdReserva = null,
                     DetallesFacturas = detalles
                 };
-                Factura fcCreada = await _facturaRepository.PostVentaDirectaAsync(f); //Crear la factura
+                await _facturaRepository.PostVentaDirectaAsync(f); //Crear la factura
 
-                //CREAR LA OCUPACIONDE BUTACAS:
-                
-                //
+                await _unitOfWork.SaveChangesAsync();
+
                 List<OcupacionButaca> lstOcupacion = new List<OcupacionButaca>();
-                foreach (DetalleFactura df in fcCreada.DetallesFacturas)
+                foreach (DetalleFactura df in f.DetallesFacturas)
                 {
                     OcupacionButaca ob = new OcupacionButaca()
                     {
                         IdFuncion = df.IdFuncion,
                         IdButaca = df.IdButaca,
-                        IdDetalleFactura = df.IdDetalleFactura
+                        IdDetalleFactura = df.IdDetalleFactura,
+                        IdDetalleReserva = null
                     };
                     lstOcupacion.Add(ob);
                 }
-                //await _ocupacionRepository.PostByReservaAsync(ob);
-                /*
-                 await _context.OcupacionesButacas.AddRange(ob);
-                */
-
+                await _reservaRepository.PostOcupByReservaAsync(lstOcupacion);
+                
                 await _unitOfWork.SaveChangesAsync();
 
                 await _unitOfWork.CommitAsync();
+
+                return f;
             }
             catch
             {
                 await _unitOfWork.RollbackAsync();
                 throw;
             }
-            return await _facturaRepository.PostVentaDirectaAsync(factura);
         }
 
-        public async Task<Factura?> CrearVentaPorReservaAsync(Factura factura)
+        public async Task CrearVentaPorReservaAsync(Factura factura)
         {
-            return await _facturaRepository.PostVentaPorReservaAsync(factura);
+            await _facturaRepository.PostVentaPorReservaAsync(factura);
         }
 
         public async Task<Factura?> TraerPorIdAsync(int idFactura, int idCliente, bool esAdmin)

@@ -11,5 +11,7 @@ namespace CineRepository.DTOs
         public int IdFuncion { get; set; }
         public int IdButaca { get; set; }
         public int IdTipoEntrada { get; set; }
+        public decimal Precio { get; set; }
+        public int IdPromocion { get; set; }
     }
 }
