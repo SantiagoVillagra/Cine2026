@@ -1,5 +1,4 @@
-﻿
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
@@ -22,21 +21,17 @@ namespace CineRepository.Domain
         [Column("idDetalleFactura")]
         public int? IdDetalleFactura { get; set; }
 
-        
         [ForeignKey(nameof(IdFuncion))]
         [JsonIgnore]
-        public virtual Funcion Funcion { get; set; }
+        public virtual Funcion Funcion { get; set; } = null!;
 
-        
         [ForeignKey(nameof(IdButaca))]
         [JsonIgnore]
-        public virtual Butaca Butaca { get; set; }
+        public virtual Butaca Butaca { get; set; } = null!;
 
-        
         [ForeignKey(nameof(IdDetalleReserva))]
         public virtual DetalleReserva? DetalleReserva { get; set; }
 
-        
         [ForeignKey(nameof(IdDetalleFactura))]
         public virtual DetalleFactura? DetalleFactura { get; set; }
     }
