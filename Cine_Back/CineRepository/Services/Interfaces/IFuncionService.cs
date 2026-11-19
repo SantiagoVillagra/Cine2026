@@ -15,5 +15,7 @@ namespace CineRepository.Services.Interfaces
         Task<List<FuncionResponseDto>> ObtenerFuncionesAsync(DateTime? fecha, int? idPelicula);
 
         Task<List<ButacaFuncionDto>> ObtenerButacasAsync(int idFuncion);
+
+        Task EliminarAsync(int idFuncion);
     }
 }

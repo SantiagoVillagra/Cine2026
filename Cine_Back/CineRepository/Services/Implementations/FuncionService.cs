@@ -126,5 +126,22 @@ namespace CineRepository.Services.Implementations
                 })
                 .ToList();
         }
+
+        public async Task EliminarAsync(int idFuncion)
+        {
+            Funcion? funcion = await _funcionRepository.GetFuncionByIdAsync(idFuncion);
+            if (funcion == null)
+                throw new KeyNotFoundException($"No existe la función con id: {idFuncion}");
+
+            if (await _funcionRepository.TieneReservasAsync(idFuncion))
+                throw new InvalidOperationException(
+                    $"No se puede eliminar la función {idFuncion} porque tiene reservas asociadas");
+
+            if (await _funcionRepository.TieneFacturasAsync(idFuncion))
+                throw new InvalidOperationException(
+                    $"No se puede eliminar la función {idFuncion} porque tiene facturas asociadas");
+
+            await _funcionRepository.EliminarAsync(funcion);
+        }
     }
 }

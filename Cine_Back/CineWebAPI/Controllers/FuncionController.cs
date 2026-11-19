@@ -19,7 +19,7 @@ namespace CineWebAPI.Controllers
             _funcionService = funcionService;
         }
 
-        [Authorize(Roles = "Admin")]
+       // [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] PostFuncionDto dto)
         {
@@ -72,6 +72,29 @@ namespace CineWebAPI.Controllers
             catch (KeyNotFoundException ex)
             {
                 return NotFound(ex.Message); // 404: la función no existe
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
+            }
+        }
+
+        //[Authorize(Roles = "Admin")]
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                await _funcionService.EliminarAsync(id);
+                return NoContent(); // 204
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message); // 404: la función no existe
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message); // 409: tiene reservas o facturas
             }
             catch (Exception ex)
             {

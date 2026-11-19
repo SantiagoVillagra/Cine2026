@@ -26,8 +26,12 @@ namespace CineRepository.Data.Implementations
         public async Task<List<Pelicula>> GetActivasAsync()
         {
             return await _context.Peliculas
-                                .Where(p => p.Activa)
-                                .ToListAsync();
+                         .Include(p => p.PeliculasGeneros)
+                             .ThenInclude(pg => pg.Genero)
+                         .Include(p => p.ActoresPeliculas)
+                             .ThenInclude(ap => ap.Actor)
+                         .Where(p => p.Activa)
+                         .ToListAsync();
         }
 
         public async Task<List<Pelicula>> GetAllAsync()
