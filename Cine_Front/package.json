@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "node --test src/utils/publicCatalog.test.js src/utils/adminStatistics.test.js src/utils/seatSelection.test.js src/utils/adminMovies.test.js src/utils/adminShowtimes.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

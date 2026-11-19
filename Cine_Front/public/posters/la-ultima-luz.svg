@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="200" y1="0" x2="200" y2="600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#541f28"/><stop offset=".55" stop-color="#d76c47"/><stop offset="1" stop-color="#f0b06b"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0" cy="0" r="1" gradientTransform="matrix(0 154 -154 0 203 293)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe5ae"/><stop offset="1" stop-color="#f4a65e" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shade" x1="200" y1="340" x2="200" y2="600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1e1b20" stop-opacity="0"/><stop offset="1" stop-color="#111315"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h400v600H0z"/>
+  <path fill="url(#sun)" d="M0 0h400v600H0z"/>
+  <circle cx="202" cy="289" r="72" fill="#ffe4ad" fill-opacity=".88"/>
+  <path d="M0 393h400v207H0z" fill="#252128"/>
+  <path d="M0 443h42v-66h35v66h25v-104h54v104h35v-57h45v57h20v-125h38v125h31v-73h42v73h33v157H0V443Z" fill="#17191c"/>
+  <path d="M0 513h400v87H0z" fill="#101214"/>
+  <path d="M80 600 200 407l121 193H80Z" fill="#af533d" fill-opacity=".56"/>
+  <path d="M0 0h400v600H0z" fill="url(#shade)"/>
+  <path d="M28 28h344v544H28z" stroke="#f6d5a0" stroke-opacity=".28" stroke-width="2"/>
+</svg>

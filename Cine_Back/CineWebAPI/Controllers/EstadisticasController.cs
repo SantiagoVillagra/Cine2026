@@ -9,7 +9,7 @@ namespace CineWebAPI.Controllers
 
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public class EstadisticasController : ControllerBase
     {
         private readonly IEstadisticaService _service;
