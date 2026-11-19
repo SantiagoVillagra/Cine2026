@@ -60,7 +60,10 @@ function LoginPage() {
   const submissionLock = useRef(false)
 
   if (isAuthenticated) {
-    return <Navigate to={user.role === 'Admin' ? '/admin/dashboard' : '/cliente/reservas'} replace />
+    const destination = user.role === 'Admin'
+      ? '/admin/dashboard'
+      : location.state?.from || '/cliente/reservas'
+    return <Navigate to={destination} replace />
   }
 
   const handleChange = (event) => {
@@ -94,8 +97,10 @@ function LoginPage() {
     try {
       const authenticatedUser = await authenticate({ email: values.email.trim(), password: values.password })
       const requestedPath = location.state?.from
-      const defaultPath = authenticatedUser.role === 'Admin' ? '/admin/dashboard' : '/cliente/reservas'
-      navigate(requestedPath || defaultPath, { replace: true })
+      const destination = authenticatedUser.role === 'Admin'
+        ? '/admin/dashboard'
+        : requestedPath || '/cliente/reservas'
+      navigate(destination, { replace: true })
     } catch (error) {
       const isAuthenticationError = error instanceof InvalidCredentialsError
       setFormError({

@@ -1,7 +1,10 @@
 import { Clapperboard } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 function PublicFooter() {
+  const location = useLocation()
+  const currentPath = `${location.pathname}${location.search}${location.hash}`
+
   return (
     <footer className="border-t border-border bg-surface">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_auto] md:items-end lg:px-8">
@@ -23,7 +26,11 @@ function PublicFooter() {
           <Link to="/#cartelera" className="text-sm text-text-secondary hover:text-text-primary">
             Cartelera
           </Link>
-          <Link to="/login" className="text-sm text-text-secondary hover:text-text-primary">
+          <Link
+            to="/login"
+            state={{ from: currentPath }}
+            className="text-sm text-text-secondary hover:text-text-primary"
+          >
             Iniciar sesión
           </Link>
         </nav>
