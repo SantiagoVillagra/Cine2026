@@ -22,5 +22,9 @@ namespace CineRepository.Data.Interfaces
         Task<List<Butaca>> GetButacasDeSalaAsync(int idSala);
         Task<List<int>> GetIdsButacasOcupadasAsync(int idFuncion);
 
+        Task<bool> TieneReservasAsync(int idFuncion);
+        Task<bool> TieneFacturasAsync(int idFuncion);
+        Task EliminarAsync(Funcion funcion);
+
     }
 }

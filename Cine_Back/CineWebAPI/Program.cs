@@ -70,6 +70,9 @@ builder.Services.AddScoped<IFuncionService, FuncionService>();
 builder.Services.AddScoped<IEstadisticaRepository, EstadisticaRepository>();
 builder.Services.AddScoped<IEstadisticaService, EstadisticaService>();
 
+builder.Services.AddScoped<ICatalogoRepository, CatalogoRepository>();
+builder.Services.AddScoped<ICatalogoService, CatalogoService>();
+
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 

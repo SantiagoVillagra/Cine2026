@@ -19,7 +19,7 @@ namespace CineWebAPI.Controllers
         }
 
         [AllowAnonymous]
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -35,7 +35,7 @@ namespace CineWebAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -56,7 +56,7 @@ namespace CineWebAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
         
         [HttpPut("{id:int}/estado")]
         public async Task<IActionResult> ChangeState(int id, [FromBody] CambiarEstadoDto dto)
@@ -80,7 +80,7 @@ namespace CineWebAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] PostPeliculaDto dto)
         {
@@ -114,6 +114,22 @@ namespace CineWebAPI.Controllers
             //    Sin token / no Admin      401 / 403
 
 
+        }
+
+        [AllowAnonymous]
+        [HttpGet("activas")]
+        public async Task<IActionResult> GetActivas()
+        {
+            try
+            {
+                List<Pelicula> lPeliculas = await _peliculaService.ObtenerActivasAsync();
+
+                return Ok(lPeliculas);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

@@ -91,5 +91,23 @@ namespace CineRepository.Data.Implementations
                                  .Select(o => o.IdButaca)
                                  .ToListAsync();
         }
+
+        public async Task<bool> TieneReservasAsync(int idFuncion)
+        {
+            return await _context.DetallesReservas
+                                 .AnyAsync(d => d.IdFuncion == idFuncion);
+        }
+
+        public async Task<bool> TieneFacturasAsync(int idFuncion)
+        {
+            return await _context.DetallesFacturas
+                                 .AnyAsync(d => d.IdFuncion == idFuncion);
+        }
+
+        public async Task EliminarAsync(Funcion funcion)
+        {
+            _context.Funciones.Remove(funcion);
+            await _context.SaveChangesAsync();
+        }
     }
 }
