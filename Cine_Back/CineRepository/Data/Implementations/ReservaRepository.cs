@@ -30,13 +30,18 @@ namespace CineRepository.Data.Implementations
         public async Task<List<Reserva>> GetMisReservasAsync(int idCliente)
         {
             return await _context.Reservas
+                        .Include(r => r.DetallesReservas)
+                        .Include(r => r.Facturas)
                         .Where(r => r.IdCliente == idCliente)
                         .ToListAsync();
         }
 
         public async Task<List<Reserva>> GetAllAsync()
         {
-            return await _context.Reservas.ToListAsync();
+            return await _context.Reservas
+                                 .Include(r => r.DetallesReservas)
+                                 .Include(r => r.Facturas)
+                                 .ToListAsync();
         }
 
         public async Task PostReservaAsync(Reserva reserva)
@@ -93,6 +98,26 @@ namespace CineRepository.Data.Implementations
         public async Task PostOcupByReservaAsync(List<OcupacionButaca> ocupaciones)
         {
             await _context.OcupacionesButacas.AddRangeAsync(ocupaciones);
+        }
+
+        public async Task<bool> ButacaPerteneceAFuncionAsync(int idFuncion, int idButaca)
+        {
+            return await _context.Funciones
+                .AnyAsync(f =>
+                    f.IdFuncion == idFuncion &&
+                    f.IdSala == _context.Butacas
+                        .Where(b => b.IdButaca == idButaca)
+                        .Select(b => b.IdSala)
+                        .FirstOrDefault()
+                );
+        }
+        public async Task<bool> ButacaDisponibleAsync(int idFuncion, int idButaca)
+        {
+            return !await _context.OcupacionesButacas
+                .AnyAsync(o =>
+                    o.IdFuncion == idFuncion &&
+                    o.IdButaca == idButaca
+                );
         }
     }
 }

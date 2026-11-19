@@ -19,5 +19,7 @@ namespace CineRepository.Data.Interfaces
 
         Task UpdateOcupWithFacturaAsync(int? idReserva, List<DetalleFactura> detalles);
         Task PostOcupByReservaAsync(List<OcupacionButaca> ocupaciones);
+        Task<bool> ButacaPerteneceAFuncionAsync(int idFuncion, int idButaca);
+        Task<bool> ButacaDisponibleAsync(int idFuncion, int idButaca);
     }
 }

@@ -98,8 +98,8 @@ namespace CineRepository.Services.Implementations
                 Factura f = new Factura()
                 {
                     FechaHoraEmision = DateTime.Now,
-                    IdReserva = idReserva,
-                    IdCliente = idCliente,
+                    IdReserva = r.IdReserva,
+                    IdCliente = r.IdCliente,
                     IdFormaPago = dto.IdFormaPago,
                     IdCanalVenta = dto.IdCanalVenta,
                     DetallesFacturas = detalles
@@ -134,12 +134,24 @@ namespace CineRepository.Services.Implementations
                 List<DetalleReserva> detalles = new List<DetalleReserva>();
                 foreach (DetalleReservaDto drDto in detallesDto.Detalles)
                 {
+                    //Chequear si la butaca es de la sala de la función:
+                    bool pertenece = await _reservaRepository.ButacaPerteneceAFuncionAsync(drDto.IdFuncion, drDto.IdButaca);
+
+                    if (!pertenece)
+                        throw new InvalidOperationException($"La butaca {drDto.IdButaca} no pertenece a la sala de la función {drDto.IdFuncion}.");
+
+                    //Chequear quela butaca no esté reservada:
+                    bool disponible = await _reservaRepository.ButacaDisponibleAsync(drDto.IdFuncion, drDto.IdButaca);
+
+                    if(!disponible)
+                        throw new InvalidOperationException($"La butaca {drDto.IdButaca} ya está ocupada para la función {drDto.IdFuncion}.");
+
                     DetalleReserva det = new DetalleReserva() {
                         IdFuncion = drDto.IdFuncion,
                         IdButaca = drDto.IdButaca,
                         IdTipoEntrada = drDto.IdTipoEntrada,
                         Precio = drDto.Precio, //CON ID FUNCION -> IDSALA -> PRECIO -> CON IDTIPOENTRADA DESC. DE ENTRADA
-                        IdPromocion = drDto.IdPromocion //CON IDFUNCION -> FECHA Y IDHORA -> 
+                        IdPromocion = drDto.IdPromocion == 0 ? null : drDto.IdPromocion //CON IDFUNCION -> FECHA Y IDHORA -> 
                     };
 
                     detalles.Add(det);
