@@ -40,6 +40,8 @@ namespace CineWebAPI.Controllers
 
             bool esAdmin = User.IsInRole("Admin");
 
+            
+
             var factura = await _facturaService.TraerPorIdAsync(id, idCliente, esAdmin);
 
             if (factura == null)

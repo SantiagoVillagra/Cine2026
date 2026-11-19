@@ -19,7 +19,7 @@ namespace CineWebAPI.Controllers
             _funcionService = funcionService;
         }
 
-        //[Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] PostFuncionDto dto)
         {

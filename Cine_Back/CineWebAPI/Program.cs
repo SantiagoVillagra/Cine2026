@@ -58,11 +58,11 @@ builder.Services.AddScoped<IPeliculaService, PeliculaService>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 
-//builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
-//builder.Services.AddScoped<IReservaService, ReservaService>();
+builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+builder.Services.AddScoped<IReservaService, ReservaService>();
 
-//builder.Services.AddScoped<IFacturaRepository, FacturaRepository>();
-//builder.Services.AddScoped<IFacturaService, FacturaService>();
+builder.Services.AddScoped<IFacturaRepository, FacturaRepository>();
+builder.Services.AddScoped<IFacturaService, FacturaService>();
 
 builder.Services.AddScoped<IFuncionRepository, FuncionRepository>();
 builder.Services.AddScoped<IFuncionService, FuncionService>();

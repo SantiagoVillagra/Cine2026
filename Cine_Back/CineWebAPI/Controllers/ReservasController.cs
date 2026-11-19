@@ -38,6 +38,7 @@ namespace CineWebAPI.Controllers
             if (!TryGetIdCliente(out int idCliente))
                 return Unauthorized();
 
+
             var reservas = await _reservaService.TraerMisReservasAsync(idCliente);
 
             return Ok(reservas);
@@ -53,6 +54,8 @@ namespace CineWebAPI.Controllers
                 return Unauthorized();
 
             bool esAdmin = User.IsInRole("Admin");
+
+
 
             var reserva = await _reservaService.TraerPorIdAsync(id, idCliente, esAdmin);
 
@@ -74,6 +77,7 @@ namespace CineWebAPI.Controllers
             if (!TryGetIdCliente(out int idCliente))
                 return Unauthorized();
 
+
             var reserva = await _reservaService.CrearReservaAsync(idCliente, reservaDto);
 
             return CreatedAtAction(nameof(GetById),new { id = reserva.IdReserva },reserva);
@@ -87,6 +91,7 @@ namespace CineWebAPI.Controllers
         {
             if (!TryGetIdCliente(out int idCliente))
                 return Unauthorized();
+
 
             bool esAdmin = User.IsInRole("Admin");
 
@@ -110,6 +115,9 @@ namespace CineWebAPI.Controllers
                 return Unauthorized();
 
             bool esAdmin = User.IsInRole("Admin");
+
+
+            
 
             var factura = await _reservaService.ConfirmarAsync(id,idCliente,esAdmin,confirmacionDto);
 
