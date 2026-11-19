@@ -1,4 +1,5 @@
 ﻿using CineRepository.DTOs;
+using CineRepository.Services.Implementations;
 using CineRepository.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -18,15 +19,63 @@ namespace CineWebAPI.Controllers
             _facturaService = facturaService;
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            try
+            {
+                var facturas = await _facturaService.TraerTodasAsync();
+
+                return Ok(facturas);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [Authorize(Roles = "Client")]
+        [HttpGet("mis-facturas")]
+        public async Task<IActionResult> GetMisReservas()
+        {
+            if (!TryGetIdCliente(out int idCliente))
+                return Unauthorized();
+
+            var facturas = await _facturaService.TraerMisFacturasAsync(idCliente);
+
+            return Ok(facturas);
+        }
+
         // POST: api/facturas
         // Registra una venta directa desde boletería.
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> CrearVentaDirecta([FromBody] PostFacturaDto facturaDto)
         {
-            var factura = await _facturaService.CrearVentaDirectaAsync(facturaDto);
+            if (facturaDto.Detalles.Count == 0)
+                return BadRequest(new
+                {
+                    message = "Debe seleccionar butacas para reservar."
+                });
 
-            return CreatedAtAction(nameof(GetById), new { id = factura.IdFactura }, factura);
+            try
+            {
+                var factura = await _facturaService.CrearVentaDirectaAsync(facturaDto);
+
+                return CreatedAtAction(nameof(GetById), new { id = factura.IdFactura }, factura);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { mensaje = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "Ocurrió un error interno en el servidor."
+                });
+            }
         }
 
         // GET: api/facturas/20

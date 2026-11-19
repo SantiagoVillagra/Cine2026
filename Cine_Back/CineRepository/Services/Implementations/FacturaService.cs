@@ -31,6 +31,18 @@ namespace CineRepository.Services.Implementations
                 List<DetalleFactura> detalles = new List<DetalleFactura>();
                 foreach (DetalleReservaDto drDto in factura.Detalles)
                 {
+                    //Chequear si la butaca es de la sala de la función:
+                    bool pertenece = await _reservaRepository.ButacaPerteneceAFuncionAsync(drDto.IdFuncion, drDto.IdButaca);
+
+                    if (!pertenece)
+                        throw new InvalidOperationException($"La butaca {drDto.IdButaca} no pertenece a la sala de la función {drDto.IdFuncion}.");
+
+                    //Chequear quela butaca no esté reservada:
+                    bool disponible = await _reservaRepository.ButacaDisponibleAsync(drDto.IdFuncion, drDto.IdButaca);
+
+                    if (!disponible)
+                        throw new InvalidOperationException($"La butaca {drDto.IdButaca} ya está ocupada para la función {drDto.IdFuncion}.");
+
                     DetalleFactura det = new DetalleFactura()
                     {
                         IdFuncion = drDto.IdFuncion,
@@ -99,6 +111,14 @@ namespace CineRepository.Services.Implementations
                 return null;
 
             return f;
+        }
+        public async Task<List<Factura>> TraerTodasAsync()
+        {
+            return await _facturaRepository.GetAllAsync();
+        }
+        public async Task<List<Factura>> TraerMisFacturasAsync(int idCliente)
+        {
+            return await _facturaRepository.GetMisFacturasAsync(idCliente);
         }
     }
 }

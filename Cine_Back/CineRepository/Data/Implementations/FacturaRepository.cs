@@ -35,5 +35,19 @@ namespace CineRepository.Data.Implementations
         {
             await _context.Facturas.AddAsync(factura);
         }
+
+        public async Task<List<Factura>> GetAllAsync()
+        {
+            return await _context.Facturas
+                                 .Include(f => f.DetallesFacturas)
+                                 .ToListAsync();
+        }
+        public async Task<List<Factura>> GetMisFacturasAsync(int idCliente)
+        {
+            return await _context.Facturas
+                        .Include(f => f.DetallesFacturas)
+                        .Where(f => f.IdCliente == idCliente)
+                        .ToListAsync();
+        }
     }
 }

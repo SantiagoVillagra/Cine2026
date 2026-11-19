@@ -24,9 +24,16 @@ namespace CineWebAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var reservas = await _reservaService.TraerTodasAsync();
+            try
+            {
+                var reservas = await _reservaService.TraerTodasAsync();
 
-            return Ok(reservas);
+                return Ok(reservas);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // GET: api/reservas/mis-reservas
@@ -37,7 +44,6 @@ namespace CineWebAPI.Controllers
         {
             if (!TryGetIdCliente(out int idCliente))
                 return Unauthorized();
-
 
             var reservas = await _reservaService.TraerMisReservasAsync(idCliente);
 
@@ -54,8 +60,6 @@ namespace CineWebAPI.Controllers
                 return Unauthorized();
 
             bool esAdmin = User.IsInRole("Admin");
-
-
 
             var reserva = await _reservaService.TraerPorIdAsync(id, idCliente, esAdmin);
 
@@ -77,10 +81,29 @@ namespace CineWebAPI.Controllers
             if (!TryGetIdCliente(out int idCliente))
                 return Unauthorized();
 
+            if (reservaDto.Detalles.Count == 0)
+                return BadRequest(new
+                {
+                    message= "Debe seleccionar butacas para reservar."
+                });
 
-            var reserva = await _reservaService.CrearReservaAsync(idCliente, reservaDto);
+            try
+            {
+                var reserva = await _reservaService.CrearReservaAsync(idCliente, reservaDto);
 
-            return CreatedAtAction(nameof(GetById),new { id = reserva.IdReserva },reserva);
+                return CreatedAtAction(nameof(GetById), new { id = reserva.IdReserva }, reserva);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { mensaje = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "Ocurrió un error interno en el servidor."
+                });
+            }
         }
 
         // PATCH: api/reservas/15/cancelar
@@ -95,12 +118,34 @@ namespace CineWebAPI.Controllers
 
             bool esAdmin = User.IsInRole("Admin");
 
-            bool cancelado = await _reservaService.CancelarAsync(id,idCliente,esAdmin);
+            try
+            {
+                bool cancelado = await _reservaService.CancelarAsync(id, idCliente, esAdmin);
 
-            if (cancelado)
-                return Ok("Reserva cancelada");
+                if (cancelado)
+                    return Ok("Reserva cancelada");
 
-            return NoContent();
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { mensaje = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { mensaje = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { mensaje = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "Ocurrió un error interno en el servidor."
+                });
+            }
         }
 
         // POST: api/reservas/15/confirmar
@@ -116,12 +161,31 @@ namespace CineWebAPI.Controllers
 
             bool esAdmin = User.IsInRole("Admin");
 
+            try
+            {
+                var factura = await _reservaService.ConfirmarAsync(id, idCliente, esAdmin, confirmacionDto);
 
-            
-
-            var factura = await _reservaService.ConfirmarAsync(id,idCliente,esAdmin,confirmacionDto);
-
-            return Ok(factura);
+                return Ok(factura);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { mensaje = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { mensaje = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { mensaje = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "Ocurrió un error interno en el servidor."
+                });
+            }
         }
 
         // Obtiene el ID del usuario desde el JWT.
