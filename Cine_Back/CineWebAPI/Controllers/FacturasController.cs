@@ -31,13 +31,13 @@ namespace CineWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
 
         [Authorize(Roles = "Client")]
         [HttpGet("mis-facturas")]
-        public async Task<IActionResult> GetMisReservas()
+        public async Task<IActionResult> GetMisFacturas()
         {
             if (!TryGetIdCliente(out int idCliente))
                 return Unauthorized();
@@ -53,6 +53,12 @@ namespace CineWebAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> CrearVentaDirecta([FromBody] PostFacturaDto facturaDto)
         {
+            TryGetIdCliente(out int idCliente);
+
+            if (User.IsInRole("Client"))
+                facturaDto.IdCliente = idCliente;
+                
+
             if (facturaDto.Detalles.Count == 0)
                 return BadRequest(new
                 {
@@ -67,13 +73,13 @@ namespace CineWebAPI.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return Conflict(new { mensaje = ex.Message });
+                return Conflict(new { message = ex.Message });
             }
             catch (Exception)
             {
                 return StatusCode(500, new
                 {
-                    mensaje = "Ocurrió un error interno en el servidor."
+                    message = "Ocurrió un error interno en el servidor."
                 });
             }
         }
@@ -88,8 +94,6 @@ namespace CineWebAPI.Controllers
                 return Unauthorized();
 
             bool esAdmin = User.IsInRole("Admin");
-
-            
 
             var factura = await _facturaService.TraerPorIdAsync(id, idCliente, esAdmin);
 

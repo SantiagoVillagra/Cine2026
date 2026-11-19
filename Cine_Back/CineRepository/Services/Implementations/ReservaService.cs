@@ -67,7 +67,7 @@ namespace CineRepository.Services.Implementations
                 throw new KeyNotFoundException("La reserva no existe.");
 
             if (!esAdmin && r.IdCliente != idCliente)
-                throw new UnauthorizedAccessException("No tenés permisos para cancelar esta reserva.");
+                throw new UnauthorizedAccessException("No tenés permisos para confirmar esta reserva.");
 
             if (!r.Estado) //Si es false ya está cancelada
                 throw new InvalidOperationException("No se puede confirmar una reserva ya cancelada.");

@@ -32,7 +32,7 @@ namespace CineWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -95,13 +95,13 @@ namespace CineWebAPI.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return Conflict(new { mensaje = ex.Message });
+                return Conflict(new { message = ex.Message });
             }
             catch (Exception)
             {
                 return StatusCode(500, new
                 {
-                    mensaje = "Ocurrió un error interno en el servidor."
+                    message = "Ocurrió un error interno en el servidor."
                 });
             }
         }
@@ -129,21 +129,21 @@ namespace CineWebAPI.Controllers
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { mensaje = ex.Message });
+                return NotFound(new { message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, new { mensaje = ex.Message });
+                return StatusCode(403, new { message = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
-                return Conflict(new { mensaje = ex.Message });
+                return Conflict(new { message = ex.Message });
             }
             catch (Exception)
             {
                 return StatusCode(500, new
                 {
-                    mensaje = "Ocurrió un error interno en el servidor."
+                    message = "Ocurrió un error interno en el servidor."
                 });
             }
         }
@@ -169,21 +169,21 @@ namespace CineWebAPI.Controllers
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { mensaje = ex.Message });
+                return NotFound(new { message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, new { mensaje = ex.Message });
+                return StatusCode(403, new { message = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
-                return Conflict(new { mensaje = ex.Message });
+                return Conflict(new { message = ex.Message });
             }
             catch (Exception)
             {
                 return StatusCode(500, new
                 {
-                    mensaje = "Ocurrió un error interno en el servidor."
+                    message = "Ocurrió un error interno en el servidor."
                 });
             }
         }
