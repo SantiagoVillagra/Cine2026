@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
 import { getMovies, getShowtimes } from '../../services/publicCatalogService.js'
 import { getAsyncState } from '../../utils/asyncState.js'
-import { formatShowtimeDate, formatShowtimeTime, getActiveMovies, mapShowtimes } from '../../utils/publicCatalog.js'
+import { filterFutureShowtimes, filterMoviesWithFutureShowtimes, formatShowtimeDate, formatShowtimeTime, getActiveMovies, mapShowtimes } from '../../utils/publicCatalog.js'
 import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 
 function Showtime({ showtime }) {
@@ -149,6 +149,7 @@ function MovieCard({ movie, showtimes, showtimesError }) {
 
 function HomePage() {
   const [languageId, setLanguageId] = useState('')
+  const [currentTime, setCurrentTime] = useState(() => new Date())
   const [retryKey, setRetryKey] = useState(0)
   const [moviesState, setMoviesState] = useState({ requestKey: -1, isLoading: true, error: null, data: [] })
   const [showtimesState, setShowtimesState] = useState({ requestKey: -1, isLoading: true, error: null, data: [] })
@@ -157,6 +158,11 @@ function HomePage() {
   useEffect(() => {
     if (pathname === '/' && hash) document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth' })
   }, [hash, pathname])
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setCurrentTime(new Date()), 15000)
+    return () => window.clearInterval(intervalId)
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -189,14 +195,20 @@ function HomePage() {
   const currentShowtimesState = showtimesState.requestKey === retryKey
     ? showtimesState
     : { isLoading: true, error: null, data: [] }
-  const availableLanguageIds = useMemo(
-    () => [...new Set(currentShowtimesState.data.map((showtime) => showtime.languageId).filter((id) => id != null))].sort((a, b) => a - b),
-    [currentShowtimesState.data],
+  const futureShowtimes = useMemo(
+    () => filterFutureShowtimes(currentShowtimesState.data, currentTime),
+    [currentShowtimesState.data, currentTime],
   )
-  const visibleMovies = useMemo(() => currentMoviesState.data.map((movie) => ({
-    ...movie,
-    showtimes: currentShowtimesState.data.filter((showtime) => showtime.movieId === movie.id && (!languageId || String(showtime.languageId) === languageId)),
-  })).filter((movie) => !languageId || movie.showtimes.length > 0), [currentMoviesState.data, currentShowtimesState.data, languageId])
+  const availableLanguageIds = useMemo(
+    () => [...new Set(futureShowtimes.map((showtime) => showtime.languageId).filter((id) => id != null))].sort((a, b) => a - b),
+    [futureShowtimes],
+  )
+  const visibleMovies = useMemo(() => filterMoviesWithFutureShowtimes(currentMoviesState.data, futureShowtimes)
+    .map((movie) => ({
+      ...movie,
+      showtimes: movie.showtimes.filter((showtime) => !languageId || String(showtime.languageId) === languageId),
+    }))
+    .filter((movie) => movie.showtimes.length > 0), [currentMoviesState.data, futureShowtimes, languageId])
   const movieStatus = getAsyncState(currentMoviesState)
   const hasFilters = Boolean(languageId)
   const resetFilters = () => {
@@ -216,7 +228,7 @@ function HomePage() {
 
         {movieStatus === 'success' && (
           <>
-            <FeaturedMovies movies={currentMoviesState.data} showtimes={currentShowtimesState.data} showtimesError={currentShowtimesState.error} />
+            <FeaturedMovies movies={visibleMovies} showtimes={futureShowtimes} showtimesError={currentShowtimesState.error} />
 
             <section id="cartelera" className="scroll-mt-24 space-y-6" aria-label="Películas en cartelera">
               <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

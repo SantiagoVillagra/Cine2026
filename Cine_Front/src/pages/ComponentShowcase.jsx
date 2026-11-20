@@ -111,8 +111,8 @@ function ComponentShowcase() {
 
         <ShowcaseSection title="EmptyState">
           <EmptyState
-            title="Todavía no tenés reservas"
-            description="Cuando reserves entradas, vas a poder consultarlas desde esta sección."
+            title="Todavía no tenés compras"
+            description="Cuando compres entradas, vas a poder consultarlas desde esta sección."
             action={<Button variant="outline">Explorar cartelera</Button>}
           />
         </ShowcaseSection>

@@ -19,13 +19,19 @@ namespace CineRepository.Data.Implementations
             _context = context;
         }
 
+        //public async Task<Factura?> GetByIdAsync(int idFactura)
+        //{
+        //    return await _context.Facturas
+        //        .Include(f => f.DetallesFacturas)
+        //        .ThenInclude(df => df.Butaca)
+        //        .FirstOrDefaultAsync(f => f.IdFactura == idFactura);
+        //}
+
         public async Task<Factura?> GetByIdAsync(int idFactura)
         {
-            return await _context.Facturas
-                .Include(f => f.DetallesFacturas)
+            return await FacturasConDetalle()
                 .FirstOrDefaultAsync(f => f.IdFactura == idFactura);
         }
-
         public async Task PostVentaDirectaAsync(Factura factura)
         {
             await _context.Facturas.AddAsync(factura);
@@ -36,18 +42,50 @@ namespace CineRepository.Data.Implementations
             await _context.Facturas.AddAsync(factura);
         }
 
+        //public async Task<List<Factura>> GetAllAsync()
+        //{
+        //    return await _context.Facturas
+
+        //                         .Include(f => f.DetallesFacturas)
+        //                         .ThenInclude(df => df.Butaca)
+        //                         .OrderByDescending(f => f.FechaHoraEmision)
+        //                         .Take(50)
+        //                         .ToListAsync();
+
+        //}
+
         public async Task<List<Factura>> GetAllAsync()
         {
-            return await _context.Facturas
-                                 .Include(f => f.DetallesFacturas)
-                                 .ToListAsync();
+            return await FacturasConDetalle()
+                .OrderByDescending(f => f.FechaHoraEmision)
+                .Take(50)
+                .ToListAsync();
         }
+        //public async Task<List<Factura>> GetMisFacturasAsync(int idCliente)
+        //{
+        //    return await _context.Facturas
+
+        //                .Include(f => f.DetallesFacturas)
+        //                .ThenInclude(df => df.Butaca)
+        //                .Where(f => f.IdCliente == idCliente)
+        //                .OrderByDescending(f => f.FechaHoraEmision)
+
+        //                .ToListAsync();
+        //}
         public async Task<List<Factura>> GetMisFacturasAsync(int idCliente)
         {
-            return await _context.Facturas
-                        .Include(f => f.DetallesFacturas)
-                        .Where(f => f.IdCliente == idCliente)
-                        .ToListAsync();
+            return await FacturasConDetalle()
+                .Where(f => f.IdCliente == idCliente)
+                .OrderByDescending(f => f.FechaHoraEmision)
+                .ToListAsync();
+        }
+        private IQueryable<Factura> FacturasConDetalle()
+        {
+            return _context.Facturas
+                .Include(f => f.Cliente)
+                .Include(f => f.DetallesFacturas).ThenInclude(df => df.Butaca)
+                .Include(f => f.DetallesFacturas).ThenInclude(df => df.Funcion).ThenInclude(fu => fu.Pelicula)
+                .Include(f => f.DetallesFacturas).ThenInclude(df => df.Funcion).ThenInclude(fu => fu.HorasFuncion);
         }
     }
 }

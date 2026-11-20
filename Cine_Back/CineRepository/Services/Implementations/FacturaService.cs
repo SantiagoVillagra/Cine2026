@@ -49,7 +49,7 @@ namespace CineRepository.Services.Implementations
                         IdButaca = drDto.IdButaca,
                         IdTipoEntrada = drDto.IdTipoEntrada,
                         PrecioUnitario = drDto.Precio, //CON ID FUNCION -> IDSALA -> PRECIO -> CON IDTIPOENTRADA DESC. DE ENTRADA
-                        IdPromocion = drDto.IdPromocion //CON IDFUNCION -> FECHA Y IDHORA -> 
+                        IdPromocion = drDto.IdPromocion == 0 ? null : drDto.IdPromocion //CON IDFUNCION -> FECHA Y IDHORA -> 
                     };
 
                     detalles.Add(det);
@@ -100,7 +100,20 @@ namespace CineRepository.Services.Implementations
             await _facturaRepository.PostVentaPorReservaAsync(factura);
         }
 
-        public async Task<Factura?> TraerPorIdAsync(int idFactura, int idCliente, bool esAdmin)
+        //public async Task<Factura?> TraerPorIdAsync(int idFactura, int idCliente, bool esAdmin)
+        //{
+        //    Factura? f = await _facturaRepository.GetByIdAsync(idFactura);
+
+        //    if (f == null)
+        //        return null;
+
+        //    if (!esAdmin && f.IdCliente != idCliente)
+        //        return null;
+
+        //    return f;
+        //}
+
+        public async Task<FacturaResponseDto?> TraerPorIdAsync(int idFactura, int idCliente, bool esAdmin)
         {
             Factura? f = await _facturaRepository.GetByIdAsync(idFactura);
 
@@ -110,15 +123,60 @@ namespace CineRepository.Services.Implementations
             if (!esAdmin && f.IdCliente != idCliente)
                 return null;
 
-            return f;
+            return ToDto(f);
         }
-        public async Task<List<Factura>> TraerTodasAsync()
+        //public async Task<List<Factura>> TraerTodasAsync()
+        //{
+        //    return await _facturaRepository.GetAllAsync();
+        //}
+
+        public async Task<List<FacturaResponseDto>> TraerTodasAsync()
         {
-            return await _facturaRepository.GetAllAsync();
+            List<Factura> facturas = await _facturaRepository.GetAllAsync();
+            return facturas.Select(ToDto).ToList();
         }
-        public async Task<List<Factura>> TraerMisFacturasAsync(int idCliente)
+        //public async Task<List<Factura>> TraerMisFacturasAsync(int idCliente)
+        //{
+        //    return await _facturaRepository.GetMisFacturasAsync(idCliente);
+        //}
+
+        public async Task<List<FacturaResponseDto>> TraerMisFacturasAsync(int idCliente)
         {
-            return await _facturaRepository.GetMisFacturasAsync(idCliente);
+            List<Factura> facturas = await _facturaRepository.GetMisFacturasAsync(idCliente);
+            return facturas.Select(ToDto).ToList();
+        }
+
+        private static FacturaResponseDto ToDto(Factura f)
+        {
+            return new FacturaResponseDto
+            {
+                IdFactura = f.IdFactura,
+                FechaHoraEmision = f.FechaHoraEmision,
+                IdReserva = f.IdReserva,
+                IdCliente = f.IdCliente,
+                IdFormaPago = f.IdFormaPago,
+                IdCanalVenta = f.IdCanalVenta,
+                NombreCliente = f.Cliente == null
+                    ? string.Empty
+                    : $"{f.Cliente.Nombre} {f.Cliente.Apellido}".Trim(),
+                PrecioTotal = f.DetallesFacturas.Sum(df => df.PrecioUnitario),
+                DetallesFacturas = f.DetallesFacturas.Select(df => new DetalleFacturaResponseDto
+                {
+                    IdDetalleFactura = df.IdDetalleFactura,
+                    PrecioUnitario = df.PrecioUnitario,
+                    IdFactura = df.IdFactura,
+                    IdFuncion = df.IdFuncion,
+                    IdPromocion = df.IdPromocion,
+                    IdButaca = df.IdButaca,
+                    Fila = df.Butaca?.Fila ?? string.Empty,
+                    NumeroButaca = df.Butaca?.Numero ?? 0,
+                    IdDetalleReserva = df.IdDetalleReserva,
+                    IdTipoEntrada = df.IdTipoEntrada,
+                    Pelicula = df.Funcion?.Pelicula?.Titulo ?? string.Empty,
+                    Fecha = df.Funcion?.Fecha.Date ?? default,
+                    Hora = df.Funcion?.HorasFuncion?.HoraFuncion ?? default
+                }).ToList()
+            };
         }
     }
 }

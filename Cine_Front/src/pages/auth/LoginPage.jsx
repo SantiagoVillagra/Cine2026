@@ -62,7 +62,7 @@ function LoginPage() {
   if (isAuthenticated) {
     const destination = user.role === 'Admin'
       ? '/admin/dashboard'
-      : location.state?.from || '/cliente/reservas'
+      : location.state?.from || '/cliente/mis-compras'
     return <Navigate to={destination} replace />
   }
 
@@ -99,7 +99,7 @@ function LoginPage() {
       const requestedPath = location.state?.from
       const destination = authenticatedUser.role === 'Admin'
         ? '/admin/dashboard'
-        : requestedPath || '/cliente/reservas'
+        : requestedPath || '/cliente/mis-compras'
       navigate(destination, { replace: true })
     } catch (error) {
       const isAuthenticationError = error instanceof InvalidCredentialsError

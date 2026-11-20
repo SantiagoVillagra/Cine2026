@@ -18,10 +18,8 @@ function SectionLayout({ section, children }) {
           <div className="flex items-center gap-4 text-sm">
             <span className="hidden text-text-secondary sm:inline">{user?.email}</span>
             {user?.role === 'Admin' ? <>
-              <Link to="/admin/reservas" className="text-text-primary transition-colors hover:text-primary">Reservas</Link>
               <Link to="/admin/facturas" className="text-text-primary transition-colors hover:text-primary">Facturas</Link>
             </> : <>
-              <Link to="/cliente/reservas" className="text-text-primary transition-colors hover:text-primary">Mis reservas</Link>
               <Link to="/cliente/mis-compras" className="text-text-primary transition-colors hover:text-primary">Mis compras</Link>
             </>}
             <Link to="/" className="text-text-primary transition-colors hover:text-primary">Cartelera</Link>

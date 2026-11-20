@@ -31,11 +31,11 @@ function MovieDetailPage() {
     }
 
     if (user.role !== 'Client') {
-      setBookingError('Para realizar una reserva, tenés que ingresar con una cuenta de cliente.')
+      setBookingError('Para comprar entradas, tenés que ingresar con una cuenta de cliente.')
       return
     }
 
-    navigate(`/cliente/reservar/${showtime.id}`, { state: { showtime } })
+    navigate(`/cliente/comprar/${showtime.id}`, { state: { showtime } })
   }
 
   useEffect(() => {
