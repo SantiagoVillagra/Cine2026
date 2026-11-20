@@ -1,12 +1,20 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
+import LogoutConfirmation from '../components/common/LogoutConfirmation.jsx'
 
 function SectionLayout({ section, children }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false)
 
   const handleLogout = () => {
+    setLogoutConfirmationOpen(true)
+  }
+
+  const confirmLogout = () => {
     logout()
+    setLogoutConfirmationOpen(false)
     navigate('/', { replace: true })
   }
 
@@ -25,6 +33,12 @@ function SectionLayout({ section, children }) {
         </div>
       </header>
       {children}
+      {logoutConfirmationOpen && (
+        <LogoutConfirmation
+          onCancel={() => setLogoutConfirmationOpen(false)}
+          onConfirm={confirmLogout}
+        />
+      )}
     </div>
   )
 }

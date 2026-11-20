@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { Clapperboard, Menu, X } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth.js'
+import LogoutConfirmation from '../common/LogoutConfirmation.jsx'
 
 function PublicNavbar() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false)
   const { user, isAuthenticated, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
@@ -13,7 +15,12 @@ function PublicNavbar() {
   const closeMenu = () => setMenuOpen(false)
 
   const handleLogout = () => {
+    setLogoutConfirmationOpen(true)
+  }
+
+  const confirmLogout = () => {
     logout()
+    setLogoutConfirmationOpen(false)
     closeMenu()
     navigate('/', { replace: true })
   }
@@ -87,6 +94,12 @@ function PublicNavbar() {
           )}
         </nav>
       </div>
+      {logoutConfirmationOpen && (
+        <LogoutConfirmation
+          onCancel={() => setLogoutConfirmationOpen(false)}
+          onConfirm={confirmLogout}
+        />
+      )}
     </header>
   )
 }
