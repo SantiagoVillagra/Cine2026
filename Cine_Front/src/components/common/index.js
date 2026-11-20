@@ -1,6 +1,8 @@
 export { default as Badge } from './Badge.jsx'
 export { default as Button } from './Button.jsx'
 export { default as Card } from './Card.jsx'
+export { default as CatalogCombobox } from './CatalogCombobox.jsx'
+export { default as DatePicker } from './DatePicker.jsx'
 export { default as EmptyState } from './EmptyState.jsx'
 export { default as Input } from './Input.jsx'
 export { default as Loading } from './Loading.jsx'

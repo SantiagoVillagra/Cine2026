@@ -1,8 +1,8 @@
 import { apiClient } from './apiClient.js'
 import { getShowtimes } from './publicCatalogService.js'
 
-export async function getAdminShowtimes({ fecha, movieId, signal } = {}) {
-  return getShowtimes({ fecha, movieId, signal })
+export async function getAdminShowtimes({ fecha, signal } = {}) {
+  return getShowtimes({ fecha, signal })
 }
 
 export async function createShowtime(showtime) {
