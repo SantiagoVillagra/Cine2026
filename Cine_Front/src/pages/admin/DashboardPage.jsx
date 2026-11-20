@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Activity, CircleDollarSign, Clapperboard, Percent, Ticket } from 'lucide-react'
+import { CircleDollarSign, Clapperboard, Percent, Ticket } from 'lucide-react'
 import {
   Bar,
   BarChart,
@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Badge, Button, Card, DatePicker, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
+import { Button, Card, DatePicker, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
 import {
   getMonthlyRevenue,
   getOccupancyByHour,
@@ -155,8 +155,7 @@ function DashboardPage() {
     <main className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <PageHeader
         title="Dashboard administrativo"
-        description="Indicadores estadísticos consultados desde la API del cine."
-        actions={<Badge variant="info">Datos del backend</Badge>}
+        description="Indicadores de negocio"
       />
 
       <Card className="space-y-4">
@@ -169,13 +168,12 @@ function DashboardPage() {
             <DatePicker id="dashboard-from" label="Desde" value={dateDraft.desde} onChange={(event) => setDateDraft((current) => ({ ...current, desde: event.target.value }))} onValidityChange={(valid) => setInvalidDateInputs((current) => ({ ...current, desde: !valid }))} />
             <DatePicker id="dashboard-to" label="Hasta" value={dateDraft.hasta} onChange={(event) => setDateDraft((current) => ({ ...current, hasta: event.target.value }))} onValidityChange={(valid) => setInvalidDateInputs((current) => ({ ...current, hasta: !valid }))} />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:mb-6">
             <Button type="submit">Aplicar período</Button>
             <Button type="button" variant="outline" onClick={clearDateRange}>Limpiar</Button>
           </div>
         </form>
         {rangeError && <p className="text-sm text-danger" role="alert">{rangeError}</p>}
-        <p className="flex items-center gap-2 text-xs text-text-secondary"><Activity size={14} className="text-info" aria-hidden="true" />Rango aplicado: {rangeLabel}</p>
       </Card>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

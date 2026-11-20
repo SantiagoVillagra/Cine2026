@@ -45,7 +45,7 @@ function InvoicesPage() {
 
   if (state.loading) return <main className="mx-auto max-w-7xl px-4 py-10"><Loading text="Cargando facturas…" /></main>
   if (state.error) return <main className="mx-auto max-w-7xl px-4 py-10"><EmptyState title="No se pudieron cargar las facturas" description={getApiErrorMessage(state.error)} action={<Button onClick={() => setRetry((value) => value + 1)}>Reintentar</Button>} /></main>
-  if (id) return <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8"><PageHeader title={`Factura #${getResourceId(state.data, 'idFactura') ?? id}`} description="Detalle devuelto por la API." actions={<Link className="text-sm text-primary hover:underline" to={root}>Volver al listado</Link>} /><RecordView kind="invoice" record={state.data} /></main>
+  if (id) return <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8"><PageHeader title={`Factura #${getResourceId(state.data, 'idFactura') ?? id}`} description="Detalle devuelto por la API." actions={<Link className="text-sm text-primary hover:underline" to={admin ? root : '/cliente/perfil'}>{admin ? 'Volver al listado' : 'Ir a mi perfil'}</Link>} /><RecordView kind="invoice" record={state.data} /></main>
 
   const records = Array.isArray(state.data) ? state.data : []
   const normalizedClientName = normalizeName(filters.clientName)

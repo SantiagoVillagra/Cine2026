@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Plus, RefreshCw, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
 import { getMovies } from '../../services/publicCatalogService.js'
+import { getClassifications, getDirectors } from '../../services/movieCatalogService.js'
 import { setMovieActive } from '../../services/adminMovieService.js'
 import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 import { formatMovieDate, mapAdminMovies, updateMovieActive } from '../../utils/adminMovies.js'
@@ -10,17 +11,27 @@ import { useAlerts } from '../../hooks/useAlerts.js'
 
 function MoviesPage() {
   const [retryKey, setRetryKey] = useState(0)
-  const [result, setResult] = useState({ requestKey: null, data: [], error: null })
+  const [result, setResult] = useState({ requestKey: null, data: [], classifications: new Map(), directors: new Map(), error: null })
   const [pendingId, setPendingId] = useState(null)
   const operationLock = useRef(false)
   const { showAlert } = useAlerts()
 
   useEffect(() => {
     const controller = new AbortController()
-    getMovies({ signal: controller.signal }).then((data) => {
-      if (!controller.signal.aborted) setResult({ requestKey: retryKey, data: mapAdminMovies(data), error: null })
+    Promise.all([
+      getMovies({ signal: controller.signal }),
+      getClassifications({ signal: controller.signal }),
+      getDirectors({ signal: controller.signal }),
+    ]).then(([movies, classifications, directors]) => {
+      if (!controller.signal.aborted) setResult({
+        requestKey: retryKey,
+        data: mapAdminMovies(movies),
+        classifications: new Map(classifications.map(({ id, nombre }) => [Number(id), nombre])),
+        directors: new Map(directors.map(({ id, nombre }) => [Number(id), nombre])),
+        error: null,
+      })
     }).catch((error) => {
-      if (!controller.signal.aborted) setResult({ requestKey: retryKey, data: [], error })
+      if (!controller.signal.aborted) setResult({ requestKey: retryKey, data: [], classifications: new Map(), directors: new Map(), error })
     })
     return () => controller.abort()
   }, [retryKey])
@@ -69,7 +80,7 @@ function MoviesPage() {
           return <tr key={movie.idPelicula} className="align-middle">
             <td className="px-5 py-4"><p className="font-semibold text-text-primary">{movie.titulo || 'Sin título'}</p><p className="mt-1 text-xs text-text-secondary">ID {movie.idPelicula}</p></td>
             <td className="px-5 py-4 text-text-secondary">{movie.duracion != null ? `${movie.duracion} min` : '—'}</td>
-            <td className="px-5 py-4 text-text-secondary">Clasificación {movie.idClasificacion ?? '—'}<br />Director {movie.idDirector ?? '—'}</td>
+            <td className="px-5 py-4 text-text-secondary">Clasificación {current.classifications.get(Number(movie.idClasificacion)) || 'No disponible'}<br />Director {current.directors.get(Number(movie.idDirector)) || 'No disponible'}</td>
             <td className="px-5 py-4 text-text-secondary">{formatMovieDate(movie.fechaEstreno)}</td>
             <td className="px-5 py-4">{knownStatus ? <Badge variant={movie.activa ? 'success' : 'danger'}>{movie.activa ? 'Activa' : 'Inactiva'}</Badge> : <Badge variant="warning">Estado no informado</Badge>}</td>
             <td className="px-5 py-4 text-right">{knownStatus ? <Button size="small" variant={movie.activa ? 'outline' : 'secondary'} icon={movie.activa ? <ShieldAlert size={15} /> : <ShieldCheck size={15} />} disabled={pendingId !== null} onClick={() => requestStatusChange(movie, !movie.activa)}>{movie.activa ? 'Desactivar' : 'Activar'}</Button> : <span className="text-xs text-text-secondary">No disponible</span>}</td>

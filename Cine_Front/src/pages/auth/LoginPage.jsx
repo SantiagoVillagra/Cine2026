@@ -196,12 +196,12 @@
 
 // export default LoginPage
 import { useRef, useState } from 'react'
-import { Clapperboard } from 'lucide-react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button, Card, Input, PageHeader } from '../../components/common/index.js'
 import { InvalidCredentialsError } from '../../utils/InvalidCredentialsError.js'
 import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 import { useAuth } from '../../hooks/useAuth.js'
+import cineLogo from '../../utils/cine CS.png'
 
 const localPartPattern = /^[A-Za-z0-9_%+-]+(?:\.[A-Za-z0-9_%+-]+)*$/
 const domainLabelPattern = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/
@@ -320,9 +320,7 @@ function LoginPage() {
   return (
     <section className="w-full max-w-md py-8">
       <div className="mb-6 flex justify-center" aria-label="Cine2026">
-        <span className="grid size-12 place-items-center rounded-lg bg-primary text-text-primary shadow-lg shadow-primary/20">
-          <Clapperboard size={24} aria-hidden="true" />
-        </span>
+        <img src={cineLogo} alt="Cine CS" className="size-24 object-contain" />
       </div>
 
       <Card className="space-y-6 sm:p-8">

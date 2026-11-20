@@ -1,31 +1,31 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Clapperboard, Clock3 } from 'lucide-react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
 import { useAuth } from '../../hooks/useAuth.js'
 import { useAlerts } from '../../hooks/useAlerts.js'
 import { getMovieById, getShowtimes } from '../../services/publicCatalogService.js'
+import { getClassifications, getLanguages } from '../../services/movieCatalogService.js'
 import { getAsyncState } from '../../utils/asyncState.js'
-import { formatShowtimeDate, formatShowtimeTime, mapMovie, mapShowtimes } from '../../utils/publicCatalog.js'
+import { formatShowtimeDate, formatShowtimeTime, getShowtimeFormat, mapMovie, mapShowtimes } from '../../utils/publicCatalog.js'
 import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 
 function MovieDetailPage() {
   const { id } = useParams()
-  const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
   const { showAlert } = useAlerts()
   const [movieRetryKey, setMovieRetryKey] = useState(0)
   const [showtimesRetryKey, setShowtimesRetryKey] = useState(0)
+  const [classifications, setClassifications] = useState(new Map())
+  const [languages, setLanguages] = useState(new Map())
   const [movieState, setMovieState] = useState({ requestKey: null, isLoading: true, error: null, data: null })
   const [showtimesState, setShowtimesState] = useState({ requestKey: null, isLoading: true, error: null, data: [] })
   const movieRequestKey = `${id}:${movieRetryKey}`
   const showtimesRequestKey = `${id}:${showtimesRetryKey}`
-  const currentPath = `${location.pathname}${location.search}${location.hash}`
-
   const handleChooseSeats = (showtime) => {
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: currentPath } })
+      navigate('/login', { state: { from: `/cliente/comprar/${showtime.id}` } })
       return
     }
 
@@ -65,6 +65,25 @@ function MovieDetailPage() {
     return () => controller.abort()
   }, [id, showtimesRequestKey])
 
+  useEffect(() => {
+    const controller = new AbortController()
+
+    Promise.allSettled([
+      getClassifications({ signal: controller.signal }),
+      getLanguages({ signal: controller.signal }),
+    ]).then(([classificationsResult, languagesResult]) => {
+      if (controller.signal.aborted) return
+      if (classificationsResult.status === 'fulfilled') {
+        setClassifications(new Map(classificationsResult.value.map(({ id: itemId, nombre }) => [Number(itemId), nombre])))
+      }
+      if (languagesResult.status === 'fulfilled') {
+        setLanguages(new Map(languagesResult.value.map(({ id: itemId, nombre }) => [Number(itemId), nombre])))
+      }
+    })
+
+    return () => controller.abort()
+  }, [])
+
   const currentMovieState = movieState.requestKey === movieRequestKey
     ? movieState
     : { isLoading: true, error: null, data: null }
@@ -93,7 +112,7 @@ function MovieDetailPage() {
 
         {movieStatus === 'success' && movie && (
           <>
-            <PageHeader title={movie.title} description="Detalle de película" actions={<Badge variant="info">Información de API</Badge>} />
+            <PageHeader title={movie.title} description="Detalle de película" />
 
             <div className="grid items-start gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-12">
               <div className="mx-auto grid aspect-[2/3] w-full max-w-sm place-items-center overflow-hidden rounded-xl border border-border bg-surface-secondary shadow-2xl shadow-black/30">
@@ -110,7 +129,7 @@ function MovieDetailPage() {
               <div className="space-y-6">
                 <Card className="flex flex-col gap-4">
                   <div className="flex flex-wrap gap-2">
-                    {movie.classificationId != null && <Badge variant="warning">Clasificación #{movie.classificationId}</Badge>}
+                    {classifications.get(Number(movie.classificationId)) && <Badge variant="warning">{classifications.get(Number(movie.classificationId))}</Badge>}
                     {movie.duration != null && <Badge variant="default">{movie.duration} min</Badge>}
                   </div>
                   <div>
@@ -138,10 +157,10 @@ function MovieDetailPage() {
                             <span className="inline-flex items-center gap-2 text-lg font-semibold tabular-nums text-text-primary">
                               <Clock3 size={17} className="text-primary" aria-hidden="true" /> {formatShowtimeTime(showtime.time)}
                             </span>
-                            <Badge variant="info">Sala {showtime.roomId}</Badge>
+                            <Badge variant="info">Formato {getShowtimeFormat(showtime) || 'no informado'}</Badge>
                           </div>
                           <p className="text-sm text-text-secondary">
-                            {formatShowtimeDate(showtime.date)} · Idioma {showtime.languageId}{showtime.isSubtitled ? ' · subtitulada' : ''}
+                            {formatShowtimeDate(showtime.date)} · {languages.get(Number(showtime.languageId)) || 'Idioma no informado'}{showtime.isSubtitled ? ' · subtitulada' : ''}
                           </p>
                           <Button className="w-full" onClick={() => handleChooseSeats(showtime)}>
                             Elegir butacas

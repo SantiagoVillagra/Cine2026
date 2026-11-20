@@ -21,5 +21,10 @@ namespace CineRepository.Services.Implementations
         {
             return await _clienteRepository.Login(user);
         }
+
+        public async Task<PerfilDto?> GetPerfilAsync(int idCliente)
+        {
+            return await _clienteRepository.GetPerfilAsync(idCliente);
+        }
     }
 }

@@ -71,6 +71,15 @@ export function validateShowtimeForm(values) {
       errors[key] = 'Ingresá un ID entero positivo.'
     }
   }
+  if (values.idHoraFuncion && !['1', '2', '3'].includes(values.idHoraFuncion)) {
+    errors.idHoraFuncion = 'Seleccioná un horario disponible.'
+  }
+  if (values.idSala && !['1', '2', '3'].includes(values.idSala)) {
+    errors.idSala = 'Seleccioná una sala disponible.'
+  }
+  if (values.idIdioma && !['1', '2'].includes(values.idIdioma)) {
+    errors.idIdioma = 'Seleccioná un idioma disponible.'
+  }
   if (!['true', 'false'].includes(values.subtitulada)) {
     errors.subtitulada = 'Seleccioná si la función será subtitulada.'
   }

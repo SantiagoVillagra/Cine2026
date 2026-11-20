@@ -1,18 +1,29 @@
 import { useState } from 'react'
-import { Clapperboard, Menu, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth.js'
+import { useAlerts } from '../../hooks/useAlerts.js'
+import cineLogo from '../../utils/cine CS.png'
 
 function PublicNavbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { user, isAuthenticated, logout } = useAuth()
+  const { showAlert } = useAlerts()
   const location = useLocation()
   const navigate = useNavigate()
   const currentPath = `${location.pathname}${location.search}${location.hash}`
 
   const closeMenu = () => setMenuOpen(false)
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const confirmed = await showAlert({
+      type: 'confirm',
+      title: 'Cerrar sesión',
+      message: '¿Querés cerrar la sesión actual?',
+      confirmLabel: 'Cerrar sesión',
+      cancelLabel: 'Seguir conectado',
+    })
+    if (!confirmed) return
     logout()
     closeMenu()
     navigate('/', { replace: true })
@@ -24,15 +35,11 @@ function PublicNavbar() {
         <Link
           to="/"
           className="inline-flex items-center gap-3 rounded-md focus-visible:outline-offset-4"
-          aria-label="Cine2026, inicio"
+          aria-label="Cine CS, inicio"
           onClick={closeMenu}
         >
-          <span className="grid size-10 place-items-center rounded-lg bg-primary text-text-primary shadow-lg shadow-primary/20">
-            <Clapperboard size={20} aria-hidden="true" />
-          </span>
-          <span className="text-lg font-bold tracking-tight text-text-primary">
-            CINE<span className="text-primary">2026</span>
-          </span>
+          <img src={cineLogo} alt="Cine CS" className="size-12 object-contain" />
+          <span className="text-lg font-bold tracking-tight text-text-primary">CINE<span className="text-primary">2026</span></span>
         </Link>
 
         <button
@@ -61,11 +68,11 @@ function PublicNavbar() {
           {isAuthenticated ? (
             <>
               <Link
-                to={user.role === 'Admin' ? '/admin/dashboard' : '/cliente/mis-compras'}
+                to={user.role === 'Admin' ? '/admin' : '/cliente/perfil'}
                 onClick={closeMenu}
                 className="rounded-md px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-secondary"
               >
-                Mi cuenta
+                {user.role === 'Admin' ? 'Inicio admin' : 'Mi perfil'}
               </Link>
               <button
                 type="button"

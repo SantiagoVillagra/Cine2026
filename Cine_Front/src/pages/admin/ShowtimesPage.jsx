@@ -100,7 +100,7 @@ function ShowtimesPage() {
     <Card className="space-y-4">
       <div><h2 className="font-semibold text-text-primary">Filtros</h2><p className="mt-1 text-sm text-text-secondary">Filtrá las funciones por fecha.</p></div>
       <form className="flex flex-col gap-4 sm:flex-row sm:items-end" onSubmit={applyFilters}>
-        <div className="w-full max-w-sm"><DatePicker label="Fecha" value={draft.fecha} onChange={(event) => setDraft((value) => ({ ...value, fecha: event.target.value }))} onValidityChange={(valid) => setInvalidDate(!valid)} error={invalidDate ? 'Ingresá una fecha válida en formato dd/mm/yyyy.' : undefined} /></div>
+        <div className="w-full max-w-sm"><DatePicker label="Fecha" value={draft.fecha} onChange={(event) => setDraft((value) => ({ ...value, fecha: event.target.value }))} onValidityChange={(valid) => setInvalidDate(!valid)} error={invalidDate ? 'Ingresá una fecha válida.' : undefined} showFormatHint={false} /></div>
         <div className="flex gap-2"><Button type="submit">Aplicar</Button><Button type="button" variant="outline" onClick={clearFilters}>Limpiar</Button></div>
       </form>
     </Card>

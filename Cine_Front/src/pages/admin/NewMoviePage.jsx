@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, RefreshCw } from 'lucide-react'
 import { Button, Card, CatalogCombobox, DatePicker, Input, PageHeader } from '../../components/common/index.js'
 import { createMovie } from '../../services/adminMovieService.js'
@@ -21,6 +21,7 @@ function NewMoviePage() {
   const [catalogError, setCatalogError] = useState('')
   const [catalogRetry, setCatalogRetry] = useState(0)
   const submitLock = useRef(false)
+  const navigate = useNavigate()
   const { showAlert } = useAlerts()
 
   useEffect(() => {
@@ -75,7 +76,9 @@ function NewMoviePage() {
         type: 'success',
         title: 'Película creada',
         message: movieId ? `La película se creó correctamente con el ID ${movieId}.` : 'La película se creó correctamente.',
+        confirmLabel: 'Ir a películas',
       })
+      navigate('/admin/peliculas', { replace: true })
     } catch (error) {
       setApiError(getApiErrorMessage(error, 'No se pudo crear la película.'))
     } finally {
@@ -101,7 +104,7 @@ function NewMoviePage() {
         <Input label="Duración en minutos *" name="duracion" type="number" min="1" max="600" step="1" value={values.duracion} onChange={update} error={errors.duracion} required />
         <CatalogCombobox label="Clasificación" options={catalogs.classifications} value={values.idClasificacion} onChange={(value) => updateField('idClasificacion', value)} error={errors.idClasificacion} required disabled={catalogLoading || Boolean(catalogError) || submitting} placeholder="Buscar clasificación" helperText={catalogLoading ? 'Cargando clasificaciones…' : undefined} />
         <CatalogCombobox label="Director" options={catalogs.directors} value={values.idDirector} onChange={(value) => updateField('idDirector', value)} error={errors.idDirector} required disabled={catalogLoading || Boolean(catalogError) || submitting} placeholder="Buscar director" helperText={catalogLoading ? 'Cargando directores…' : undefined} />
-        <DatePicker label="Fecha de estreno *" name="fechaEstreno" value={values.fechaEstreno} onChange={update} error={errors.fechaEstreno} required />
+        <DatePicker label="Fecha de estreno *" name="fechaEstreno" value={values.fechaEstreno} onChange={update} error={errors.fechaEstreno} required showFormatHint={false} />
         <Input label="Póster (ruta o URL) *" name="poster" value={values.poster} onChange={update} error={errors.poster} maxLength={300} placeholder="/imagenes/poster.jpg" required />
       </div>
       <label className="grid gap-2 text-sm font-medium text-text-primary" htmlFor="movie-sinopsis">Sinopsis<textarea id="movie-sinopsis" name="sinopsis" value={values.sinopsis} onChange={update} rows={4} className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary focus-visible:outline-primary" /></label>

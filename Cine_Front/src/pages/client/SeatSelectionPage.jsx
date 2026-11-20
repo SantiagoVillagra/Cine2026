@@ -135,6 +135,17 @@ function SeatSelectionPage() {
   const submitPurchase = async () => {
     if (!selectedSeats.length || submissionLock.current || timerExpired.current || !isPositiveInteger(funcionId)) return
     submissionLock.current = true
+    const confirmed = await showAlert({
+      type: 'confirm',
+      title: 'Confirmar compra',
+      message: `Vas a comprar ${selectedSeats.length} ${selectedSeats.length === 1 ? 'entrada' : 'entradas'} por ${formatPrice(selectedSeats.length * 10000)}. ¿Querés continuar?`,
+      confirmLabel: 'Confirmar compra',
+      cancelLabel: 'Seguir revisando',
+    })
+    if (!confirmed || timerExpired.current) {
+      submissionLock.current = false
+      return
+    }
     setSubmitting(true)
     const body = {
       idFormaPago: 1,
@@ -221,7 +232,6 @@ function SeatSelectionPage() {
         <PageHeader
           title="Elegí tus butacas"
           description="Seleccioná una o varias butacas disponibles para esta función."
-          actions={<Badge variant="info">Función #{funcionId}</Badge>}
         />
 
         <div

@@ -12,6 +12,7 @@ function DatePicker({
   error,
   required = false,
   disabled = false,
+  showFormatHint = true,
   id,
   name,
   className = '',
@@ -68,7 +69,7 @@ function DatePicker({
           onFocus={() => { isFocused.current = true }}
           onBlur={() => { isFocused.current = false; setDisplayValue(formatDateForInput(value)) }}
           aria-invalid={Boolean(error)}
-          aria-describedby={error ? errorId : helperId}
+          aria-describedby={error ? errorId : showFormatHint ? helperId : undefined}
           autoComplete="off"
           required={required}
           disabled={disabled}
@@ -99,7 +100,7 @@ function DatePicker({
           className="pointer-events-none absolute right-10 top-1/2 size-px -translate-y-1/2 opacity-0"
         />
       </div>
-      {error ? <p id={errorId} className="text-xs text-danger" role="alert">{error}</p> : <p id={helperId} className="text-xs text-text-secondary">Formato: dd/mm/yyyy</p>}
+      {error ? <p id={errorId} className="text-xs text-danger" role="alert">{error}</p> : showFormatHint ? <p id={helperId} className="text-xs text-text-secondary">Formato: dd/mm/yyyy</p> : null}
     </div>
   )
 }

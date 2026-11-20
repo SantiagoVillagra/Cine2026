@@ -23,6 +23,13 @@ export function mapShowtime(showtime) {
   }
 }
 
+export function getShowtimeFormat(showtime) {
+  const roomId = Number(showtime?.roomId)
+  if (roomId === 1 || roomId === 2) return '2D'
+  if (roomId === 3) return '3D'
+  return null
+}
+
 export function getActiveMovies(movies) {
   return Array.isArray(movies)
     ? movies.filter((movie) => movie?.activa === true).map(mapMovie)

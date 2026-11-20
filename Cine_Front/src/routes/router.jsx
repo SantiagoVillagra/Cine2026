@@ -16,6 +16,7 @@ import NewShowtimePage from '../pages/admin/NewShowtimePage.jsx';
 import LoginPage from '../pages/auth/LoginPage.jsx';
 import SeatSelectionPage from '../pages/client/SeatSelectionPage.jsx';
 import InvoicesPage from '../pages/shared/InvoicesPage.jsx';
+import ProfilePage from '../pages/client/ProfilePage.jsx';
 
 const routes = [
   {
@@ -45,6 +46,10 @@ const routes = [
           {
             path: '/cliente/mis-compras',
             element: <InvoicesPage />,
+          },
+          {
+            path: '/cliente/perfil',
+            element: <ProfilePage />,
           },
           { path: '/cliente/facturas', element: <InvoicesPage /> },
           { path: '/cliente/facturas/:id', element: <InvoicesPage /> },

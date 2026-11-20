@@ -9,3 +9,4 @@ export const getClassifications = (options) => getCatalog('/api/clasificaciones'
 export const getDirectors = (options) => getCatalog('/api/directores', options)
 export const getGenres = (options) => getCatalog('/api/generos', options)
 export const getActors = (options) => getCatalog('/api/actores', options)
+export const getLanguages = (options) => getCatalog('/api/idiomas', options)

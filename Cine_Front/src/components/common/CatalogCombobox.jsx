@@ -51,7 +51,7 @@ function CatalogCombobox({
       <label htmlFor={inputId} className="text-sm font-medium text-text-primary">
         {label}{required ? ' *' : ''}
       </label>
-      <div className="relative">
+      <div>
         <div className={`flex min-h-10 flex-wrap items-center gap-2 rounded-md border bg-surface px-3 py-2 text-sm ${error ? 'border-danger' : 'border-border'} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}>
           {selectedOptions.map((option) => (
             <span key={option.id} className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-xs text-text-primary">
@@ -95,7 +95,7 @@ function CatalogCombobox({
           />
         </div>
         {open && !disabled && (
-          <ul id={listId} role="listbox" aria-multiselectable={multiple || undefined} className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-md border border-border bg-surface py-1 shadow-xl">
+          <ul id={listId} role="listbox" aria-multiselectable={multiple || undefined} className="mt-1 max-h-56 w-full overflow-auto rounded-md border border-border bg-surface py-1 shadow-xl">
             {filteredOptions.length
               ? filteredOptions.map((option) => (
                 <li key={option.id} role="option" aria-selected={multiple ? selectedIds.includes(option.id) : value === option.id}>

@@ -3,11 +3,12 @@ import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Clapperboard, Clock3,
 import { Link, useLocation } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
 import { getMovies, getShowtimes } from '../../services/publicCatalogService.js'
+import { getClassifications, getLanguages } from '../../services/movieCatalogService.js'
 import { getAsyncState } from '../../utils/asyncState.js'
-import { filterFutureShowtimes, filterMoviesWithFutureShowtimes, formatShowtimeDate, formatShowtimeTime, getActiveMovies, mapShowtimes } from '../../utils/publicCatalog.js'
+import { filterFutureShowtimes, filterMoviesWithFutureShowtimes, formatShowtimeDate, formatShowtimeTime, getActiveMovies, getShowtimeFormat, mapShowtimes } from '../../utils/publicCatalog.js'
 import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 
-function Showtime({ showtime }) {
+function Showtime({ showtime, languages }) {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-background/70 px-3 py-2">
       <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-text-primary">
@@ -15,7 +16,7 @@ function Showtime({ showtime }) {
         {formatShowtimeTime(showtime.time)}
       </span>
       <span className="text-xs text-text-secondary">Sala {showtime.roomId}</span>
-      <Badge variant="info">Idioma {showtime.languageId}</Badge>
+      <Badge variant="info">{languages.get(Number(showtime.languageId)) || 'Idioma no informado'}</Badge>
       {showtime.isSubtitled && <span className="text-xs text-text-secondary">Subtitulada</span>}
     </div>
   )
@@ -33,7 +34,7 @@ function Poster({ movie, className = '' }) {
   return <img src={movie.poster} alt={`Afiche de ${movie.title}`} className={className} />
 }
 
-function FeaturedMovies({ movies, showtimes, showtimesError }) {
+function FeaturedMovies({ movies, showtimes, showtimesError, classifications, languages }) {
   const [activeIndex, setActiveIndex] = useState(0)
   const featuredMovies = movies.slice(0, 3)
 
@@ -80,7 +81,7 @@ function FeaturedMovies({ movies, showtimes, showtimesError }) {
             {movie.synopsis && <p className="mt-4 max-w-xl text-base leading-7 text-text-secondary">{movie.synopsis}</p>}
             <div className="mt-5 flex flex-wrap items-center gap-2">
               {movie.duration && <Badge variant="default">{movie.duration} min</Badge>}
-              {movie.classificationId != null && <Badge variant="warning">Clasificación #{movie.classificationId}</Badge>}
+              {classifications.get(Number(movie.classificationId)) && <Badge variant="warning">{classifications.get(Number(movie.classificationId))}</Badge>}
             </div>
 
             <div className="mt-7 w-full max-w-xl">
@@ -88,7 +89,7 @@ function FeaturedMovies({ movies, showtimes, showtimesError }) {
               {showtimesError ? (
                 <p className="text-sm text-warning">No se pudieron consultar las funciones.</p>
               ) : movieShowtimes.length > 0 ? (
-                <div className="grid gap-2 sm:grid-cols-2">{movieShowtimes.map((showtime) => <Showtime key={showtime.id} showtime={showtime} />)}</div>
+                <div className="grid gap-2 sm:grid-cols-2">{movieShowtimes.map((showtime) => <Showtime key={showtime.id} showtime={showtime} languages={languages} />)}</div>
               ) : (
                 <p className="text-sm text-text-secondary">No hay funciones informadas.</p>
               )}
@@ -109,15 +110,16 @@ function FeaturedMovies({ movies, showtimes, showtimesError }) {
   )
 }
 
-function MovieCard({ movie, showtimes, showtimesError }) {
+function MovieCard({ movie, showtimes, showtimesError, classifications, languages }) {
   return (
-    <Card padding="none" className="group overflow-hidden transition-colors hover:border-text-secondary/50">
+    <Link to={`/pelicula/${movie.id}`} className="block rounded-xl text-inherit no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-label={`Consultar detalles de ${movie.title}`}>
+    <Card padding="none" className="group h-full overflow-hidden transition-colors hover:border-text-secondary/50">
       <article className="flex h-full flex-col">
         <div className="relative aspect-[2/3] overflow-hidden bg-surface-secondary">
           <Poster movie={movie} className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-          {movie.classificationId != null && (
+          {classifications.get(Number(movie.classificationId)) && (
             <div className="absolute inset-x-0 bottom-0 flex justify-end bg-gradient-to-t from-black/90 via-black/45 to-transparent p-4 pt-16">
-              <Badge variant="warning">Clasificación #{movie.classificationId}</Badge>
+              <Badge variant="warning">{classifications.get(Number(movie.classificationId))}</Badge>
             </div>
           )}
         </div>
@@ -131,28 +133,32 @@ function MovieCard({ movie, showtimes, showtimesError }) {
             ) : showtimes.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {showtimes.slice(0, 3).map((showtime) => (
-                  <span key={showtime.id} className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-text-primary" title={`Sala ${showtime.roomId} · Idioma ${showtime.languageId}`}>
+                  <span key={showtime.id} className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-text-primary" title={`Sala ${showtime.roomId} · ${languages.get(Number(showtime.languageId)) || 'Idioma no informado'}`}>
                     <span className="font-semibold tabular-nums">{formatShowtimeDate(showtime.date)} · {formatShowtimeTime(showtime.time)}</span>
                   </span>
                 ))}
               </div>
             ) : <p className="text-xs text-text-secondary">Sin funciones informadas.</p>}
           </div>
-          <Link to={`/pelicula/${movie.id}`} className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-text-primary transition-colors hover:text-primary focus-visible:rounded-sm">
+          <span className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-text-primary transition-colors group-hover:text-primary">
             Ver detalles <ArrowRight size={15} aria-hidden="true" />
-          </Link>
+          </span>
         </div>
       </article>
     </Card>
+    </Link>
   )
 }
 
 function HomePage() {
+  const [format, setFormat] = useState('')
   const [languageId, setLanguageId] = useState('')
   const [currentTime, setCurrentTime] = useState(() => new Date())
   const [retryKey, setRetryKey] = useState(0)
   const [moviesState, setMoviesState] = useState({ requestKey: -1, isLoading: true, error: null, data: [] })
   const [showtimesState, setShowtimesState] = useState({ requestKey: -1, isLoading: true, error: null, data: [] })
+  const [classifications, setClassifications] = useState(new Map())
+  const [languages, setLanguages] = useState(new Map())
   const { hash, pathname } = useLocation()
 
   useEffect(() => {
@@ -170,7 +176,9 @@ function HomePage() {
     Promise.allSettled([
       getMovies({ signal: controller.signal }),
       getShowtimes({ signal: controller.signal }),
-    ]).then(([moviesResult, showtimesResult]) => {
+      getClassifications({ signal: controller.signal }),
+      getLanguages({ signal: controller.signal }),
+    ]).then(([moviesResult, showtimesResult, classificationsResult, languagesResult]) => {
       if (controller.signal.aborted) return
 
       if (moviesResult.status === 'fulfilled') {
@@ -183,6 +191,13 @@ function HomePage() {
         setShowtimesState({ requestKey: retryKey, isLoading: false, error: null, data: mapShowtimes(showtimesResult.value) })
       } else {
         setShowtimesState({ requestKey: retryKey, isLoading: false, error: showtimesResult.reason, data: [] })
+      }
+
+      if (classificationsResult.status === 'fulfilled') {
+        setClassifications(new Map(classificationsResult.value.map(({ id, nombre }) => [Number(id), nombre])))
+      }
+      if (languagesResult.status === 'fulfilled') {
+        setLanguages(new Map(languagesResult.value.map(({ id, nombre }) => [Number(id), nombre])))
       }
     })
 
@@ -199,26 +214,26 @@ function HomePage() {
     () => filterFutureShowtimes(currentShowtimesState.data, currentTime),
     [currentShowtimesState.data, currentTime],
   )
-  const availableLanguageIds = useMemo(
-    () => [...new Set(futureShowtimes.map((showtime) => showtime.languageId).filter((id) => id != null))].sort((a, b) => a - b),
-    [futureShowtimes],
+  const filteredShowtimes = useMemo(() => futureShowtimes.filter((showtime) => {
+    const matchesFormat = !format || getShowtimeFormat(showtime) === format
+    const matchesLanguage = !languageId || String(showtime.languageId) === languageId
+    return matchesFormat && matchesLanguage
+  }), [futureShowtimes, format, languageId])
+  const visibleMovies = useMemo(
+    () => filterMoviesWithFutureShowtimes(currentMoviesState.data, filteredShowtimes),
+    [currentMoviesState.data, filteredShowtimes],
   )
-  const visibleMovies = useMemo(() => filterMoviesWithFutureShowtimes(currentMoviesState.data, futureShowtimes)
-    .map((movie) => ({
-      ...movie,
-      showtimes: movie.showtimes.filter((showtime) => !languageId || String(showtime.languageId) === languageId),
-    }))
-    .filter((movie) => movie.showtimes.length > 0), [currentMoviesState.data, futureShowtimes, languageId])
   const movieStatus = getAsyncState(currentMoviesState)
-  const hasFilters = Boolean(languageId)
+  const hasFilters = Boolean(format || languageId)
   const resetFilters = () => {
+    setFormat('')
     setLanguageId('')
   }
 
   return (
     <main>
       <div className="mx-auto max-w-7xl space-y-14 px-4 py-8 sm:px-6 sm:py-12 lg:space-y-16 lg:px-8">
-        <PageHeader title="Cartelera" description="Elegí tu próxima película y encontrá una función para disfrutarla en pantalla grande." actions={<Badge variant="info">Cartelera actual</Badge>} />
+        <PageHeader title="Cartelera" description="Elegí tu próxima película y encontrá una función para disfrutarla en pantalla grande." />
 
         {movieStatus === 'loading' && <div className="flex justify-center py-14"><Loading text="Cargando cartelera…" /></div>}
         {movieStatus === 'error' && (
@@ -228,7 +243,7 @@ function HomePage() {
 
         {movieStatus === 'success' && (
           <>
-            <FeaturedMovies movies={visibleMovies} showtimes={futureShowtimes} showtimesError={currentShowtimesState.error} />
+            <FeaturedMovies movies={visibleMovies} showtimes={filteredShowtimes} showtimesError={currentShowtimesState.error} classifications={classifications} languages={languages} />
 
             <section id="cartelera" className="scroll-mt-24 space-y-6" aria-label="Películas en cartelera">
               <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -240,23 +255,25 @@ function HomePage() {
               </header>
 
               <Card padding="small" className="flex flex-col gap-4 lg:flex-row lg:items-end">
-                <div className="flex items-center gap-2 text-text-secondary lg:mr-2 lg:pb-2"><SlidersHorizontal size={17} aria-hidden="true" /><span className="text-sm font-medium">Filtrar funciones</span></div>
+                <div className="flex items-center gap-2 text-text-secondary lg:mr-2 lg:pb-2"><SlidersHorizontal size={17} aria-hidden="true" /><span className="text-sm font-medium">Filtrar</span></div>
                 <div className="grid flex-1 gap-4 sm:grid-cols-2 lg:max-w-2xl">
                   <div className="grid gap-2">
                     <label htmlFor="format-filter" className="text-xs font-medium text-text-secondary">Formato</label>
-                    <select id="format-filter" value="" disabled className="min-h-10 rounded-md border border-border bg-background px-3 text-sm text-text-secondary disabled:cursor-not-allowed disabled:opacity-70">
-                      <option value="">Formato no informado por la API</option>
+                    <select id="format-filter" value={format} onChange={(event) => setFormat(event.target.value)} className="min-h-10 rounded-md border border-border bg-background px-3 text-sm text-text-primary focus-visible:border-primary">
+                      <option value="">Todos los formatos</option>
+                      <option value="2D">2D</option>
+                      <option value="3D">3D</option>
                     </select>
                   </div>
                   <div className="grid gap-2">
                     <label htmlFor="language-filter" className="text-xs font-medium text-text-secondary">Idioma</label>
                     <select id="language-filter" value={languageId} onChange={(event) => setLanguageId(event.target.value)} className="min-h-10 rounded-md border border-border bg-background px-3 text-sm text-text-primary focus-visible:border-primary">
                       <option value="">Todos los idiomas</option>
-                      {availableLanguageIds.map((id) => <option key={id} value={id}>Idioma ID {id}</option>)}
+                      {[...languages].map(([id, nombre]) => <option key={id} value={id}>{nombre}</option>)}
                     </select>
                   </div>
                 </div>
-                {hasFilters && <Button variant="outline" size="small" onClick={resetFilters}>Restablecer</Button>}
+                <Button variant="outline" size="small" onClick={resetFilters} disabled={!hasFilters}>Limpiar filtros</Button>
                 {currentShowtimesState.error && (
                   <div role="status" className="flex flex-wrap items-center gap-3 text-xs text-warning">
                     <span>Los horarios no están disponibles. {getApiErrorMessage(currentShowtimesState.error)}</span>
@@ -269,10 +286,10 @@ function HomePage() {
                 <div className="flex justify-center py-8"><Loading text="Cargando funciones…" /></div>
               ) : visibleMovies.length > 0 ? (
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {visibleMovies.map((movie) => <MovieCard key={movie.id} movie={movie} showtimes={movie.showtimes} showtimesError={currentShowtimesState.error} />)}
+                  {visibleMovies.map((movie) => <MovieCard key={movie.id} movie={movie} showtimes={movie.showtimes} showtimesError={currentShowtimesState.error} classifications={classifications} languages={languages} />)}
                 </div>
               ) : (
-                <EmptyState title={languageId ? 'No hay funciones para este idioma' : 'No hay películas para mostrar'} description={languageId ? 'Probá con otro idioma o restablecé el filtro.' : 'No se encontraron películas activas.'} action={languageId ? <Button variant="outline" onClick={resetFilters}>Limpiar filtros</Button> : undefined} />
+                <EmptyState title={hasFilters ? 'No hay funciones para esos filtros' : 'No hay películas para mostrar'} description={hasFilters ? 'Probá con otra combinación o limpiá los filtros.' : 'No se encontraron películas activas.'} action={hasFilters ? <Button variant="outline" onClick={resetFilters}>Limpiar filtros</Button> : undefined} />
               )}
             </section>
           </>

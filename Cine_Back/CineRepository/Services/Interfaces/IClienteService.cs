@@ -10,5 +10,7 @@ namespace CineRepository.Services.Interfaces
     public interface IClienteService
     {
         Task<LoginResponseDto?> Login(UserLoginDto user);
+
+        Task<PerfilDto?> GetPerfilAsync(int idCliente);
     }
 }

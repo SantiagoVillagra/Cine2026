@@ -34,5 +34,20 @@ namespace CineRepository.Data.Implementations
                 IsAdmin = c.IsAdmin
             };
         }
+
+        public async Task<PerfilDto?> GetPerfilAsync(int idCliente)
+        {
+            return await _context.Clientes
+                .AsNoTracking()
+                .Where(c => c.IdCliente == idCliente)
+                .Select(c => new PerfilDto
+                {
+                    Nombre = c.Nombre,
+                    Apellido = c.Apellido,
+                    Telefono = c.Telefono,
+                    Email = c.Email
+                })
+                .FirstOrDefaultAsync();
+        }
     }
 }

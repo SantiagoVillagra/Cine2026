@@ -1,5 +1,5 @@
-import { Clapperboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import cineLogo from '../../utils/cine CS.png';
 
 function PublicFooter() {
   return (
@@ -10,11 +10,7 @@ function PublicFooter() {
             to='/'
             className='inline-flex items-center gap-2 font-semibold text-text-primary'
           >
-            <Clapperboard
-              size={18}
-              className='text-primary'
-              aria-hidden='true'
-            />
+            <img src={cineLogo} alt='' className='size-10 object-contain' />
             Cine2026
           </Link>
           <p className='mt-3 max-w-md text-sm leading-6 text-text-secondary'>
