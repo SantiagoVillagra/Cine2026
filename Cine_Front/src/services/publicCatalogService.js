@@ -2,7 +2,7 @@ import { apiClient } from './apiClient.js'
 import { buildShowtimeParams } from '../utils/publicCatalog.js'
 
 export async function getMovies({ signal } = {}) {
-  const { data } = await apiClient.get('/api/peliculas', { signal })
+  const { data } = await apiClient.get('/api/peliculas/activas', { signal })
   return data
 }
 
