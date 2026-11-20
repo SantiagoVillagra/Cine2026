@@ -75,17 +75,28 @@ function InvoicesPage() {
   if (state.error) return <main className="mx-auto max-w-7xl px-4 py-10"><EmptyState title="No se pudieron cargar las facturas" description={getApiErrorMessage(state.error)} action={<Button onClick={() => setRetry((value) => value + 1)}>Reintentar</Button>} /></main>
   if (id) return <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8"><PageHeader title={`Factura #${getResourceId(state.data, 'idFactura') ?? id}`} description="Detalle devuelto por la API." actions={<Link className="text-sm text-primary hover:underline" to={root}>Volver al listado</Link>} /><RecordView kind="invoice" record={state.data} /></main>
   const records = Array.isArray(state.data) ? state.data : []
-  return <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8"><PageHeader title={admin ? 'Facturas' : 'Mis facturas'} description={admin ? 'Facturas registradas en el sistema.' : 'Consultá el historial de tus compras.'} />
-    <Card><form className="space-y-4" onSubmit={submitSale}><div><h2 className="font-semibold text-text-primary">Venta directa</h2><p className="mt-1 text-sm text-text-secondary">Registra una factura; el backend valida sala y disponibilidad.</p></div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{admin && <Input label="ID del cliente" type="number" min="1" step="1" required value={sale.clientId} onChange={updateSale('clientId')} error={!isPositiveInteger(sale.clientId) ? "Debe ser un entero mayor que cero." : ""} />}
-        <Input label="ID de función" type="number" min="1" step="1" required value={sale.showtimeId} onChange={updateSale('showtimeId')} error={!isPositiveInteger(sale.showtimeId) ? "Debe ser un entero mayor que cero." : ""} />
-        <Input label="ID de butaca" type="number" min="1" step="1" required value={sale.seatId} onChange={updateSale('seatId')} error={!isPositiveInteger(sale.seatId) ? "Debe ser un entero mayor que cero." : ""} />
-      </div><Button type="submit" loading={saleBusy} disabled={!saleIsValid}>Registrar venta directa</Button>
-    </form></Card>
-    {records.length === 0 ? <EmptyState title="No hay facturas para mostrar" description="La API devolvió una lista vacía." /> : <div className="grid gap-4">{records.map((item, index) => {
-      const resourceId = getResourceId(item, 'idFactura')
-      return <div key={resourceId ?? index} className="space-y-2"><RecordView kind="invoice" record={item} compact />{resourceId ? <Link className="inline-flex min-h-9 items-center text-sm font-medium text-primary hover:underline" to={`${root}/${resourceId}`}>Ver detalle de factura #{resourceId}</Link> : <p className="text-xs text-text-secondary">El DTO no incluyó idFactura; no es posible abrir el detalle desde esta fila.</p>}</div>
-    })}</div>}
+  return <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+    <PageHeader title={admin ? 'Facturas' : 'Mis facturas'} description={admin ? 'Facturas registradas en el sistema.' : 'Consultá el historial de tus compras.'} />
+    {admin && <Card>
+      <form className="space-y-4" onSubmit={submitSale}>
+        <div>
+          <h2 className="font-semibold text-text-primary">Venta directa</h2>
+          <p className="mt-1 text-sm text-text-secondary">Registra una factura; el backend valida sala y disponibilidad.</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Input label="ID del cliente" type="number" min="1" step="1" required value={sale.clientId} onChange={updateSale('clientId')} error={!isPositiveInteger(sale.clientId) ? 'Debe ser un entero mayor que cero.' : ''} />
+          <Input label="ID de función" type="number" min="1" step="1" required value={sale.showtimeId} onChange={updateSale('showtimeId')} error={!isPositiveInteger(sale.showtimeId) ? 'Debe ser un entero mayor que cero.' : ''} />
+          <Input label="ID de butaca" type="number" min="1" step="1" required value={sale.seatId} onChange={updateSale('seatId')} error={!isPositiveInteger(sale.seatId) ? 'Debe ser un entero mayor que cero.' : ''} />
+        </div>
+        <Button type="submit" loading={saleBusy} disabled={!saleIsValid}>Registrar venta directa</Button>
+      </form>
+    </Card>}
+    {records.length === 0
+      ? <EmptyState title="No hay facturas para mostrar" description="La API devolvió una lista vacía." />
+      : <div className="grid gap-4">{records.map((item, index) => {
+        const resourceId = getResourceId(item, 'idFactura')
+        return <RecordView key={resourceId ?? index} kind="invoice" record={item} />
+      })}</div>}
   </main>
 }
 
