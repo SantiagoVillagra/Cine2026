@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Badge, Button, Card, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
+import { Badge, Button, Card, DatePicker, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
 import {
   getMonthlyRevenue,
   getOccupancyByHour,
@@ -72,6 +72,7 @@ const initialStatState = { isLoading: true, error: null, data: [] }
 
 function DashboardPage() {
   const [dateDraft, setDateDraft] = useState({ desde: '', hasta: '' })
+  const [invalidDateInputs, setInvalidDateInputs] = useState({ desde: false, hasta: false })
   const [appliedRange, setAppliedRange] = useState({ desde: '', hasta: '' })
   const [rangeError, setRangeError] = useState('')
   const [topLimit, setTopLimit] = useState(10)
@@ -126,6 +127,10 @@ function DashboardPage() {
 
   const applyDateRange = (event) => {
     event.preventDefault()
+    if (invalidDateInputs.desde || invalidDateInputs.hasta) {
+      setRangeError('Ingresá las fechas con el formato dd/mm/yyyy y verificá que sean válidas.')
+      return
+    }
     if (!isValidDateRange(dateDraft.desde, dateDraft.hasta)) {
       setRangeError('La fecha “Desde” debe ser anterior o igual a “Hasta”.')
       return
@@ -137,6 +142,7 @@ function DashboardPage() {
 
   const clearDateRange = () => {
     setDateDraft({ desde: '', hasta: '' })
+    setInvalidDateInputs({ desde: false, hasta: false })
     setAppliedRange({ desde: '', hasta: '' })
     setRangeError('')
   }
@@ -160,14 +166,8 @@ function DashboardPage() {
         </div>
         <form className="flex flex-col gap-4 sm:flex-row sm:items-end" onSubmit={applyDateRange}>
           <div className="grid flex-1 gap-4 sm:grid-cols-2">
-            <label className="grid gap-2 text-sm text-text-secondary" htmlFor="dashboard-from">
-              Desde
-              <input id="dashboard-from" type="date" value={dateDraft.desde} onChange={(event) => setDateDraft((current) => ({ ...current, desde: event.target.value }))} className="min-h-10 rounded-md border border-border bg-background px-3 text-text-primary focus-visible:outline-primary" />
-            </label>
-            <label className="grid gap-2 text-sm text-text-secondary" htmlFor="dashboard-to">
-              Hasta
-              <input id="dashboard-to" type="date" value={dateDraft.hasta} onChange={(event) => setDateDraft((current) => ({ ...current, hasta: event.target.value }))} className="min-h-10 rounded-md border border-border bg-background px-3 text-text-primary focus-visible:outline-primary" />
-            </label>
+            <DatePicker id="dashboard-from" label="Desde" value={dateDraft.desde} onChange={(event) => setDateDraft((current) => ({ ...current, desde: event.target.value }))} onValidityChange={(valid) => setInvalidDateInputs((current) => ({ ...current, desde: !valid }))} />
+            <DatePicker id="dashboard-to" label="Hasta" value={dateDraft.hasta} onChange={(event) => setDateDraft((current) => ({ ...current, hasta: event.target.value }))} onValidityChange={(valid) => setInvalidDateInputs((current) => ({ ...current, hasta: !valid }))} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button type="submit">Aplicar período</Button>

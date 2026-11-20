@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2 } from 'lucide-react'
-import { Button, Card, Input, PageHeader } from '../../components/common/index.js'
+import { Button, Card, DatePicker, Input, PageHeader } from '../../components/common/index.js'
 import { createShowtime } from '../../services/adminShowtimeService.js'
 import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 import { requestShowtimeCreation, validateShowtimeForm } from '../../utils/adminShowtimes.js'
@@ -48,7 +48,7 @@ function NewShowtimePage() {
     {apiError && <p className="rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-danger" role="alert">{apiError}</p>}
     <Card><form className="space-y-6" onSubmit={submit} noValidate>
       <div className="grid gap-5 sm:grid-cols-2">
-        <Input label="Fecha *" name="fecha" type="date" value={values.fecha} onChange={update} error={errors.fecha} required />
+        <DatePicker label="Fecha *" name="fecha" value={values.fecha} onChange={update} error={errors.fecha} required />
         <Input label="ID de horario *" name="idHoraFuncion" type="number" min="1" step="1" value={values.idHoraFuncion} onChange={update} error={errors.idHoraFuncion} helperText="ID existente; ingreso manual provisorio hasta disponer de un catálogo." required />
         <Input label="ID de película *" name="idPelicula" type="number" min="1" step="1" value={values.idPelicula} onChange={update} error={errors.idPelicula} helperText="ID existente; ingreso manual provisorio hasta disponer de un catálogo." required />
         <Input label="ID de sala *" name="idSala" type="number" min="1" step="1" value={values.idSala} onChange={update} error={errors.idSala} helperText="ID existente; ingreso manual provisorio hasta disponer de un catálogo." required />

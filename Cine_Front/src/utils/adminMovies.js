@@ -1,4 +1,11 @@
 function parsePositiveIdList(value) {
+  if (Array.isArray(value)) {
+    if (value.some((id) => !Number.isInteger(id) || id < 1)) {
+      return { value: [], error: 'Seleccioná elementos válidos del catálogo.' }
+    }
+    return { value: [...new Set(value)], error: null }
+  }
+
   const normalized = value.trim()
   if (!normalized) return { value: [], error: null }
 
@@ -53,11 +60,11 @@ export function validateMovieForm(values) {
   }
 
   if (!Number.isInteger(idClasificacion) || idClasificacion < 1) {
-    errors.idClasificacion = 'Ingresá un ID de clasificación entero positivo.'
+    errors.idClasificacion = 'Seleccioná una clasificación existente.'
   }
 
   if (!Number.isInteger(idDirector) || idDirector < 1) {
-    errors.idDirector = 'Ingresá un ID de director entero positivo.'
+    errors.idDirector = 'Seleccioná un director existente.'
   }
 
   if (!isValidDate(values.fechaEstreno)) errors.fechaEstreno = 'Ingresá una fecha válida.'
