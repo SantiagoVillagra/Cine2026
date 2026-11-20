@@ -8,12 +8,14 @@ import ProtectedRoute from './ProtectedRoute.jsx';
 import HomePage from '../pages/public/HomePage.jsx';
 import MovieDetailPage from '../pages/public/MovieDetailPage.jsx';
 import DashboardPage from '../pages/admin/DashboardPage.jsx';
+import AdminHomePage from '../pages/admin/AdminHomePage.jsx';
 import MoviesPage from '../pages/admin/MoviesPage.jsx';
 import NewMoviePage from '../pages/admin/NewMoviePage.jsx';
 import ShowtimesPage from '../pages/admin/ShowtimesPage.jsx';
 import NewShowtimePage from '../pages/admin/NewShowtimePage.jsx';
 import LoginPage from '../pages/auth/LoginPage.jsx';
 import SeatSelectionPage from '../pages/client/SeatSelectionPage.jsx';
+import InvoicesPage from '../pages/shared/InvoicesPage.jsx';
 
 const routes = [
   {
@@ -36,15 +38,16 @@ const routes = [
       {
         element: <ClientLayout />,
         children: [
-          { path: '/cliente/reservas', element: <PlaceholderPage title='Mis reservas' /> },
           {
-            path: '/cliente/reservar/:funcionId',
+            path: '/cliente/comprar/:funcionId',
             element: <SeatSelectionPage />,
           },
           {
             path: '/cliente/mis-compras',
-            element: <PlaceholderPage title='Mis compras' />,
+            element: <InvoicesPage />,
           },
+          { path: '/cliente/facturas', element: <InvoicesPage /> },
+          { path: '/cliente/facturas/:id', element: <InvoicesPage /> },
         ],
       },
     ],
@@ -55,6 +58,10 @@ const routes = [
       {
         element: <AdminLayout />,
         children: [
+          {
+            path: '/admin',
+            element: <AdminHomePage />,
+          },
           {
             path: '/admin/dashboard',
             element: <DashboardPage />,
@@ -75,6 +82,8 @@ const routes = [
             path: '/admin/funciones/nueva',
             element: <NewShowtimePage />,
           },
+          { path: '/admin/facturas', element: <InvoicesPage /> },
+          { path: '/admin/facturas/:id', element: <InvoicesPage /> },
         ],
       },
     ],

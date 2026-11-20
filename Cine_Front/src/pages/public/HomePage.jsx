@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
 import { getMovies, getShowtimes } from '../../services/publicCatalogService.js'
 import { getAsyncState } from '../../utils/asyncState.js'
-import { formatShowtimeDate, formatShowtimeTime, getActiveMovies, mapShowtimes } from '../../utils/publicCatalog.js'
+import { filterFutureShowtimes, filterMoviesWithFutureShowtimes, formatShowtimeDate, formatShowtimeTime, getActiveMovies, mapShowtimes } from '../../utils/publicCatalog.js'
 import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 
 function Showtime({ showtime }) {
@@ -65,10 +65,15 @@ function FeaturedMovies({ movies, showtimes, showtimesError }) {
         )}
       </div>
 
-      <Card padding="none" className="relative isolate overflow-hidden">
-        <div className="pointer-events-none absolute -right-20 -top-24 size-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-40 left-1/3 size-96 rounded-full bg-info/10 blur-3xl" />
-        <div className="relative grid min-h-[34rem] gap-8 p-6 sm:p-8 md:grid-cols-[1.05fr_0.95fr] md:items-center md:p-10">
+      <Link
+        to={`/pelicula/${movie.id}`}
+        className="group block rounded-xl text-inherit no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        aria-label={`Consultar detalles de ${movie.title}`}
+      >
+        <Card padding="none" className="relative isolate overflow-hidden transition-colors group-hover:border-text-secondary/50">
+          <div className="pointer-events-none absolute -right-20 -top-24 size-96 rounded-full bg-primary/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-40 left-1/3 size-96 rounded-full bg-info/10 blur-3xl" />
+          <div className="relative grid min-h-[34rem] gap-8 p-6 sm:p-8 md:grid-cols-[1.05fr_0.95fr] md:items-center md:p-10">
           <div className="flex flex-col items-start">
             <Badge variant="danger">En cartelera</Badge>
             <h2 className="mt-5 max-w-xl text-4xl font-semibold leading-tight tracking-tight text-text-primary sm:text-5xl">{movie.title}</h2>
@@ -89,16 +94,17 @@ function FeaturedMovies({ movies, showtimes, showtimesError }) {
               )}
             </div>
 
-            <Link to={`/pelicula/${movie.id}`} className="mt-7 inline-flex min-h-11 items-center gap-2 rounded-md border border-primary bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition-colors hover:border-primary-hover hover:bg-primary-hover focus-visible:outline-offset-4">
+            <span className="mt-7 inline-flex min-h-11 items-center gap-2 rounded-md border border-primary bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition-colors group-hover:border-primary-hover group-hover:bg-primary-hover">
               Consultar detalles <ArrowRight size={16} aria-hidden="true" />
-            </Link>
+            </span>
           </div>
           <div className="relative mx-auto flex w-full max-w-sm justify-center md:max-w-none">
             <div className="absolute inset-x-8 bottom-2 h-8 rounded-full bg-black/50 blur-xl" />
             <Poster movie={movie} className="relative max-h-[26rem] w-auto rounded-lg border border-white/10 object-contain shadow-2xl shadow-black/50" />
           </div>
-        </div>
-      </Card>
+          </div>
+        </Card>
+      </Link>
     </section>
   )
 }
@@ -143,6 +149,7 @@ function MovieCard({ movie, showtimes, showtimesError }) {
 
 function HomePage() {
   const [languageId, setLanguageId] = useState('')
+  const [currentTime, setCurrentTime] = useState(() => new Date())
   const [retryKey, setRetryKey] = useState(0)
   const [moviesState, setMoviesState] = useState({ requestKey: -1, isLoading: true, error: null, data: [] })
   const [showtimesState, setShowtimesState] = useState({ requestKey: -1, isLoading: true, error: null, data: [] })
@@ -151,6 +158,11 @@ function HomePage() {
   useEffect(() => {
     if (pathname === '/' && hash) document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth' })
   }, [hash, pathname])
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setCurrentTime(new Date()), 15000)
+    return () => window.clearInterval(intervalId)
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -183,14 +195,20 @@ function HomePage() {
   const currentShowtimesState = showtimesState.requestKey === retryKey
     ? showtimesState
     : { isLoading: true, error: null, data: [] }
-  const availableLanguageIds = useMemo(
-    () => [...new Set(currentShowtimesState.data.map((showtime) => showtime.languageId).filter((id) => id != null))].sort((a, b) => a - b),
-    [currentShowtimesState.data],
+  const futureShowtimes = useMemo(
+    () => filterFutureShowtimes(currentShowtimesState.data, currentTime),
+    [currentShowtimesState.data, currentTime],
   )
-  const visibleMovies = useMemo(() => currentMoviesState.data.map((movie) => ({
-    ...movie,
-    showtimes: currentShowtimesState.data.filter((showtime) => showtime.movieId === movie.id && (!languageId || String(showtime.languageId) === languageId)),
-  })).filter((movie) => !languageId || movie.showtimes.length > 0), [currentMoviesState.data, currentShowtimesState.data, languageId])
+  const availableLanguageIds = useMemo(
+    () => [...new Set(futureShowtimes.map((showtime) => showtime.languageId).filter((id) => id != null))].sort((a, b) => a - b),
+    [futureShowtimes],
+  )
+  const visibleMovies = useMemo(() => filterMoviesWithFutureShowtimes(currentMoviesState.data, futureShowtimes)
+    .map((movie) => ({
+      ...movie,
+      showtimes: movie.showtimes.filter((showtime) => !languageId || String(showtime.languageId) === languageId),
+    }))
+    .filter((movie) => movie.showtimes.length > 0), [currentMoviesState.data, futureShowtimes, languageId])
   const movieStatus = getAsyncState(currentMoviesState)
   const hasFilters = Boolean(languageId)
   const resetFilters = () => {
@@ -210,7 +228,7 @@ function HomePage() {
 
         {movieStatus === 'success' && (
           <>
-            <FeaturedMovies movies={currentMoviesState.data} showtimes={currentShowtimesState.data} showtimesError={currentShowtimesState.error} />
+            <FeaturedMovies movies={visibleMovies} showtimes={futureShowtimes} showtimesError={currentShowtimesState.error} />
 
             <section id="cartelera" className="scroll-mt-24 space-y-6" aria-label="Películas en cartelera">
               <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

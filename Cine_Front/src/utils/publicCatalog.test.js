@@ -3,12 +3,35 @@ import test from 'node:test'
 import { getAsyncState } from './asyncState.js'
 import {
   buildShowtimeParams,
+  filterFutureShowtimes,
+  filterMoviesWithFutureShowtimes,
   formatShowtimeDate,
   formatShowtimeTime,
   getActiveMovies,
   mapShowtime,
   mapShowtimes,
 } from './publicCatalog.js'
+
+test('cartelera conserva sólo las funciones con inicio futuro respecto a fecha y hora local', () => {
+  const now = new Date(2026, 10, 19, 15, 0, 0)
+  const showtimes = [
+    { id: 1, date: '2026-11-18T00:00:00', time: '20:00:00', movieId: 10 },
+    { id: 2, date: '2026-11-19T00:00:00', time: '14:59:59', movieId: 10 },
+    { id: 3, date: '2026-11-19T00:00:00', time: '15:00:01', movieId: 10 },
+    { id: 4, date: '2026-11-20T00:00:00', time: '09:00:00', movieId: 11 },
+  ]
+
+  assert.deepEqual(filterFutureShowtimes(showtimes, now).map(({ id }) => id), [3, 4])
+})
+
+test('cartelera excluye películas que no tienen funciones futuras', () => {
+  const movies = [{ id: 10, title: 'Con función futura' }, { id: 11, title: 'Sin función futura' }]
+  const futureShowtimes = [{ id: 1, movieId: 10 }]
+
+  assert.deepEqual(filterMoviesWithFutureShowtimes(movies, futureShowtimes), [
+    { id: 10, title: 'Con función futura', showtimes: futureShowtimes },
+  ])
+})
 
 test('cartelera conserva sólo películas con activa true y adapta los campos documentados', () => {
   const movies = getActiveMovies([

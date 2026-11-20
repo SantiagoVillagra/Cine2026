@@ -6,14 +6,14 @@ import { getMovies } from '../../services/publicCatalogService.js'
 import { setMovieActive } from '../../services/adminMovieService.js'
 import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 import { formatMovieDate, mapAdminMovies, updateMovieActive } from '../../utils/adminMovies.js'
+import { useAlerts } from '../../hooks/useAlerts.js'
 
 function MoviesPage() {
   const [retryKey, setRetryKey] = useState(0)
   const [result, setResult] = useState({ requestKey: null, data: [], error: null })
   const [pendingId, setPendingId] = useState(null)
-  const [confirming, setConfirming] = useState(null)
-  const [operationError, setOperationError] = useState('')
   const operationLock = useRef(false)
+  const { showAlert } = useAlerts()
 
   useEffect(() => {
     const controller = new AbortController()
@@ -32,28 +32,32 @@ function MoviesPage() {
     if (operationLock.current) return
     operationLock.current = true
     setPendingId(movie.idPelicula)
-    setOperationError('')
     try {
       await setMovieActive(movie.idPelicula, nextActive)
       setResult((state) => ({ ...state, data: updateMovieActive(state.data, movie.idPelicula, nextActive) }))
-      setConfirming(null)
     } catch (error) {
-      setOperationError(getApiErrorMessage(error, 'No se pudo actualizar el estado de la película.'))
+      await showAlert({ type: 'error', title: 'No se pudo actualizar la película', message: getApiErrorMessage(error, 'No se pudo actualizar el estado de la película.') })
     } finally {
       operationLock.current = false
       setPendingId(null)
     }
   }
 
+  const requestStatusChange = async (movie, nextActive) => {
+    const confirmed = await showAlert({
+      type: 'confirm',
+      title: `${nextActive ? 'Activar' : 'Desactivar'} película`,
+      message: `¿Confirmás ${nextActive ? 'activar' : 'desactivar'} «${movie.titulo}»? ${nextActive ? 'Podrá aparecer en la cartelera pública.' : 'Dejará de aparecer en la cartelera pública.'}`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar',
+    })
+    if (confirmed) await applyStatus(movie, nextActive)
+  }
+
   return (
     <main className="mx-auto w-full max-w-7xl space-y-7 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <PageHeader title="Películas" description="Administrá el catálogo y la disponibilidad en la cartelera pública."
         actions={<Link className="inline-flex min-h-10 items-center gap-2 rounded-md border border-primary bg-primary px-4 py-2 text-sm font-medium text-text-primary hover:bg-primary-hover" to="/admin/peliculas/nueva"><Plus size={16} />Nueva película</Link>} />
-      {operationError && <p className="rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-danger" role="alert">{operationError}</p>}
-      {confirming && <Card className="flex flex-col gap-4 border-warning/40 sm:flex-row sm:items-center sm:justify-between" role="alertdialog" aria-label="Confirmar cambio de estado">
-        <p className="text-sm text-text-primary">¿Confirmás {confirming.nextActive ? 'activar' : 'desactivar'} «{confirming.movie.titulo}»? {confirming.nextActive ? 'Podrá aparecer en la cartelera pública.' : 'Dejará de aparecer en la cartelera pública.'}</p>
-        <div className="flex gap-2"><Button variant="outline" onClick={() => setConfirming(null)} disabled={pendingId !== null}>Cancelar</Button><Button variant={confirming.nextActive ? 'primary' : 'danger'} loading={pendingId === confirming.movie.idPelicula} onClick={() => applyStatus(confirming.movie, confirming.nextActive)}>Confirmar</Button></div>
-      </Card>}
       {status === 'loading' && <Card className="flex min-h-64 items-center justify-center"><Loading text="Cargando películas…" /></Card>}
       {status === 'error' && <EmptyState title="No se pudo cargar el catálogo" description={getApiErrorMessage(current.error)} action={<Button variant="outline" icon={<RefreshCw size={16} />} onClick={() => setRetryKey((key) => key + 1)}>Reintentar</Button>} />}
       {status === 'empty' && <EmptyState title="Todavía no hay películas" description="Cuando existan películas registradas, aparecerán en este listado." action={<Link className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-text-primary" to="/admin/peliculas/nueva">Crear película</Link>} />}
@@ -68,7 +72,7 @@ function MoviesPage() {
             <td className="px-5 py-4 text-text-secondary">Clasificación {movie.idClasificacion ?? '—'}<br />Director {movie.idDirector ?? '—'}</td>
             <td className="px-5 py-4 text-text-secondary">{formatMovieDate(movie.fechaEstreno)}</td>
             <td className="px-5 py-4">{knownStatus ? <Badge variant={movie.activa ? 'success' : 'danger'}>{movie.activa ? 'Activa' : 'Inactiva'}</Badge> : <Badge variant="warning">Estado no informado</Badge>}</td>
-            <td className="px-5 py-4 text-right">{knownStatus ? <Button size="small" variant={movie.activa ? 'outline' : 'secondary'} icon={movie.activa ? <ShieldAlert size={15} /> : <ShieldCheck size={15} />} disabled={pendingId !== null} onClick={() => { setOperationError(''); setConfirming({ movie, nextActive: !movie.activa }) }}>{movie.activa ? 'Desactivar' : 'Activar'}</Button> : <span className="text-xs text-text-secondary">No disponible</span>}</td>
+            <td className="px-5 py-4 text-right">{knownStatus ? <Button size="small" variant={movie.activa ? 'outline' : 'secondary'} icon={movie.activa ? <ShieldAlert size={15} /> : <ShieldCheck size={15} />} disabled={pendingId !== null} onClick={() => requestStatusChange(movie, !movie.activa)}>{movie.activa ? 'Desactivar' : 'Activar'}</Button> : <span className="text-xs text-text-secondary">No disponible</span>}</td>
           </tr>
         })}</tbody></table>
       </div></Card>}

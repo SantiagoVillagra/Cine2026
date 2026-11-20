@@ -31,13 +31,16 @@ namespace CineRepository.Domain
         [Column("fechaEstreno", TypeName = "date")]
         public DateTime FechaEstreno { get; set; }
 
-        [Required]
-        [MaxLength(100)]
-        [Column("poster", TypeName = "varchar(100)")]
-        public string Poster { get; set; } = string.Empty;
+        
+        [MaxLength(500)]
+        [Column("poster", TypeName = "varchar(500)")]
+        public string? Poster { get; set; } = string.Empty;
 
         [Column("sinopsis", TypeName = "varchar(MAX)")]
         public string? Sinopsis { get; set; }
+
+        [Column("activa")]
+        public bool Activa { get; set; } = true;
 
         [ForeignKey(nameof(IdClasificacion))]
         [JsonIgnore]

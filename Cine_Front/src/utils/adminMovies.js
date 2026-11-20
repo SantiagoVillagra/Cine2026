@@ -93,8 +93,8 @@ export function updateMovieActive(movies, movieId, activa) {
 export function formatMovieDate(value) {
   if (typeof value !== 'string' || !isValidDate(value)) return value || 'Fecha no informada'
   return new Intl.DateTimeFormat('es-AR', {
-    day: 'numeric',
-    month: 'short',
+    day: '2-digit',
+    month: '2-digit',
     year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(`${value}T00:00:00.000Z`))

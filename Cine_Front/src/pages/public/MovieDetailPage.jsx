@@ -3,6 +3,7 @@ import { ArrowLeft, Clapperboard, Clock3 } from 'lucide-react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
 import { useAuth } from '../../hooks/useAuth.js'
+import { useAlerts } from '../../hooks/useAlerts.js'
 import { getMovieById, getShowtimes } from '../../services/publicCatalogService.js'
 import { getAsyncState } from '../../utils/asyncState.js'
 import { formatShowtimeDate, formatShowtimeTime, mapMovie, mapShowtimes } from '../../utils/publicCatalog.js'
@@ -13,9 +14,9 @@ function MovieDetailPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
+  const { showAlert } = useAlerts()
   const [movieRetryKey, setMovieRetryKey] = useState(0)
   const [showtimesRetryKey, setShowtimesRetryKey] = useState(0)
-  const [bookingError, setBookingError] = useState('')
   const [movieState, setMovieState] = useState({ requestKey: null, isLoading: true, error: null, data: null })
   const [showtimesState, setShowtimesState] = useState({ requestKey: null, isLoading: true, error: null, data: [] })
   const movieRequestKey = `${id}:${movieRetryKey}`
@@ -23,19 +24,17 @@ function MovieDetailPage() {
   const currentPath = `${location.pathname}${location.search}${location.hash}`
 
   const handleChooseSeats = (showtime) => {
-    setBookingError('')
-
     if (!isAuthenticated) {
       navigate('/login', { state: { from: currentPath } })
       return
     }
 
     if (user.role !== 'Client') {
-      setBookingError('Para realizar una reserva, tenés que ingresar con una cuenta de cliente.')
+      showAlert({ type: 'warning', title: 'Acceso de cliente requerido', message: 'Para comprar entradas, tenés que ingresar con una cuenta de cliente.' })
       return
     }
 
-    navigate(`/cliente/reservar/${showtime.id}`, { state: { showtime } })
+    navigate(`/cliente/comprar/${showtime.id}`, { state: { showtime } })
   }
 
   useEffect(() => {
@@ -150,11 +149,6 @@ function MovieDetailPage() {
                         </Card>
                       ))}
                     </div>
-                  )}
-                  {bookingError && (
-                    <p className="rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-danger" role="alert">
-                      {bookingError}
-                    </p>
                   )}
                 </section>
               </div>
