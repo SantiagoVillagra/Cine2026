@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Clapperboard, Menu, X } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth.js'
 
 function PublicNavbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { user, isAuthenticated, logout } = useAuth()
+  const location = useLocation()
   const navigate = useNavigate()
+  const currentPath = `${location.pathname}${location.search}${location.hash}`
 
   const closeMenu = () => setMenuOpen(false)
 
@@ -76,6 +78,7 @@ function PublicNavbar() {
           ) : (
             <Link
               to="/login"
+              state={{ from: currentPath }}
               onClick={closeMenu}
               className="rounded-md border border-primary bg-primary px-4 py-2.5 text-center text-sm font-semibold text-text-primary transition-colors hover:border-primary-hover hover:bg-primary-hover"
             >

@@ -65,10 +65,15 @@ function FeaturedMovies({ movies, showtimes, showtimesError }) {
         )}
       </div>
 
-      <Card padding="none" className="relative isolate overflow-hidden">
-        <div className="pointer-events-none absolute -right-20 -top-24 size-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-40 left-1/3 size-96 rounded-full bg-info/10 blur-3xl" />
-        <div className="relative grid min-h-[34rem] gap-8 p-6 sm:p-8 md:grid-cols-[1.05fr_0.95fr] md:items-center md:p-10">
+      <Link
+        to={`/pelicula/${movie.id}`}
+        className="group block rounded-xl text-inherit no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        aria-label={`Consultar detalles de ${movie.title}`}
+      >
+        <Card padding="none" className="relative isolate overflow-hidden transition-colors group-hover:border-text-secondary/50">
+          <div className="pointer-events-none absolute -right-20 -top-24 size-96 rounded-full bg-primary/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-40 left-1/3 size-96 rounded-full bg-info/10 blur-3xl" />
+          <div className="relative grid min-h-[34rem] gap-8 p-6 sm:p-8 md:grid-cols-[1.05fr_0.95fr] md:items-center md:p-10">
           <div className="flex flex-col items-start">
             <Badge variant="danger">En cartelera</Badge>
             <h2 className="mt-5 max-w-xl text-4xl font-semibold leading-tight tracking-tight text-text-primary sm:text-5xl">{movie.title}</h2>
@@ -89,16 +94,17 @@ function FeaturedMovies({ movies, showtimes, showtimesError }) {
               )}
             </div>
 
-            <Link to={`/pelicula/${movie.id}`} className="mt-7 inline-flex min-h-11 items-center gap-2 rounded-md border border-primary bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition-colors hover:border-primary-hover hover:bg-primary-hover focus-visible:outline-offset-4">
+            <span className="mt-7 inline-flex min-h-11 items-center gap-2 rounded-md border border-primary bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition-colors group-hover:border-primary-hover group-hover:bg-primary-hover">
               Consultar detalles <ArrowRight size={16} aria-hidden="true" />
-            </Link>
+            </span>
           </div>
           <div className="relative mx-auto flex w-full max-w-sm justify-center md:max-w-none">
             <div className="absolute inset-x-8 bottom-2 h-8 rounded-full bg-black/50 blur-xl" />
             <Poster movie={movie} className="relative max-h-[26rem] w-auto rounded-lg border border-white/10 object-contain shadow-2xl shadow-black/50" />
           </div>
-        </div>
-      </Card>
+          </div>
+        </Card>
+      </Link>
     </section>
   )
 }

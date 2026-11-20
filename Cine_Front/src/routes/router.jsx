@@ -14,6 +14,8 @@ import ShowtimesPage from '../pages/admin/ShowtimesPage.jsx';
 import NewShowtimePage from '../pages/admin/NewShowtimePage.jsx';
 import LoginPage from '../pages/auth/LoginPage.jsx';
 import SeatSelectionPage from '../pages/client/SeatSelectionPage.jsx';
+import ReservationsPage from '../pages/shared/ReservationsPage.jsx';
+import InvoicesPage from '../pages/shared/InvoicesPage.jsx';
 
 const routes = [
   {
@@ -36,15 +38,18 @@ const routes = [
       {
         element: <ClientLayout />,
         children: [
-          { path: '/cliente/reservas', element: <PlaceholderPage title='Mis reservas' /> },
+          { path: '/cliente/reservas', element: <ReservationsPage /> },
+          { path: '/cliente/reservas/:id', element: <ReservationsPage /> },
           {
             path: '/cliente/reservar/:funcionId',
             element: <SeatSelectionPage />,
           },
           {
             path: '/cliente/mis-compras',
-            element: <PlaceholderPage title='Mis compras' />,
+            element: <InvoicesPage />,
           },
+          { path: '/cliente/facturas', element: <InvoicesPage /> },
+          { path: '/cliente/facturas/:id', element: <InvoicesPage /> },
         ],
       },
     ],
@@ -75,6 +80,10 @@ const routes = [
             path: '/admin/funciones/nueva',
             element: <NewShowtimePage />,
           },
+          { path: '/admin/reservas', element: <ReservationsPage /> },
+          { path: '/admin/reservas/:id', element: <ReservationsPage /> },
+          { path: '/admin/facturas', element: <InvoicesPage /> },
+          { path: '/admin/facturas/:id', element: <InvoicesPage /> },
         ],
       },
     ],
