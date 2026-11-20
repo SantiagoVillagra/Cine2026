@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Clapperboard, Ticket } from 'lucide-react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import SeatMap from '../../components/seats/SeatMap.jsx'
-import { Badge, Button, Card, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
+import { Badge, Button, Card, EmptyState, Input, Loading, PageHeader } from '../../components/common/index.js'
 import { getShowtimes } from '../../services/publicCatalogService.js'
 import { getShowtimeSeats } from '../../services/seatService.js'
 import { getAsyncState } from '../../utils/asyncState.js'
 import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
+import { createReservation } from '../../services/reservationService.js'
+import { createInvoice } from '../../services/invoiceService.js'
+import { emptyCatalogIds, getResourceId, isPositiveInteger, isValidPrice } from '../../utils/transactionData.js'
 import { formatShowtimeDate, formatShowtimeTime, mapShowtimes } from '../../utils/publicCatalog.js'
 import { findShowtimeById, getSelectedSeats, mapSeats, toggleSeatSelection } from '../../utils/seatSelection.js'
 
 function SeatSelectionPage() {
   const { funcionId } = useParams()
+  const navigate = useNavigate()
   const location = useLocation()
   const routeShowtime = location.state?.showtime
   const hasRouteShowtime = routeShowtime && String(routeShowtime.id) === String(funcionId)
@@ -19,6 +23,13 @@ function SeatSelectionPage() {
   const [seatState, setSeatState] = useState({ requestKey: null, isLoading: true, error: null, data: [] })
   const [functionState, setFunctionState] = useState({ requestKey: null, isLoading: true, error: null, notFound: false, data: null })
   const [selectionState, setSelectionState] = useState({ requestKey: null, ids: [] })
+  const [ticketType, setTicketType] = useState(emptyCatalogIds.ticketType)
+  const [price, setPrice] = useState('')
+  const [promotion, setPromotion] = useState('')
+  const [payment, setPayment] = useState(emptyCatalogIds.paymentMethod)
+  const [channel, setChannel] = useState(emptyCatalogIds.salesChannel)
+  const [submitting, setSubmitting] = useState(false)
+  const [actionMessage, setActionMessage] = useState('')
   const requestKey = `${funcionId}:${retryKey}`
 
   useEffect(() => {
@@ -86,6 +97,57 @@ function SeatSelectionPage() {
       const ids = current.requestKey === requestKey ? current.ids : []
       return { requestKey, ids: toggleSeatSelection(ids, seat, currentSeatState.data) }
     })
+  }
+
+  const submitPurchase = async (mode) => {
+    if (!selectedSeats.length) return
+    if (!isPositiveInteger(ticketType)) {
+      setActionMessage('Ingresá un ID de tipo de entrada entero y mayor que cero.')
+      return
+    }
+    if (!isValidPrice(price)) {
+      setActionMessage('Ingresá un precio válido igual o mayor que cero.')
+      return
+    }
+    if (promotion.trim() && !isPositiveInteger(promotion)) {
+      setActionMessage('El ID de promoción debe ser un entero mayor que cero o quedar vacío.')
+      return
+    }
+    if (mode === 'invoice' && !isPositiveInteger(payment)) {
+      setActionMessage('Ingresá un ID de forma de pago entero y mayor que cero.')
+      return
+    }
+    if (mode === 'invoice' && !isPositiveInteger(channel)) {
+      setActionMessage('Ingresá un ID de canal de venta entero y mayor que cero.')
+      return
+    }
+    setSubmitting(true)
+    setActionMessage('')
+    const details = selectedSeats.map((seat) => ({ idButaca: seat.id, idTipoEntrada: Number(ticketType), precio: Number(price), idPromocion: promotion ? Number(promotion) : null }))
+    try {
+      const response = mode === 'reservation'
+        ? await createReservation({ idFuncion: Number(funcionId), detalles: details })
+        : await createInvoice({ idFormaPago: Number(payment), idCanalVenta: Number(channel), detalles: details.map((detail) => ({ ...detail, idFuncion: Number(funcionId) })) })
+      const resourceId = getResourceId(response, mode === 'reservation' ? 'idReserva' : 'idFactura')
+      if (resourceId) navigate(mode === 'reservation' ? `/cliente/reservas/${resourceId}` : `/cliente/facturas/${resourceId}`, { state: { created: true } })
+      else setActionMessage('La API respondió correctamente, pero su DTO no incluye el identificador esperado para abrir el detalle. Revisá el historial para verificar el resultado.')
+    } catch (error) {
+      if (error.response?.status === 409) {
+        try {
+          const freshSeats = mapSeats(await getShowtimeSeats(funcionId))
+          setSeatState({ requestKey, isLoading: false, error: null, data: freshSeats })
+          setSelectionState((current) => ({
+            requestKey,
+            ids: current.ids.filter((seatId) => freshSeats.some((seat) => seat.id === seatId && !seat.occupied)),
+          }))
+          setActionMessage('La disponibilidad cambió. Actualizamos las butacas; revisá tu selección antes de volver a intentar.')
+        } catch (refreshError) {
+          setActionMessage(`La disponibilidad cambió, pero no se pudo actualizar el mapa. ${getApiErrorMessage(refreshError)}`)
+        }
+      } else {
+        setActionMessage(getApiErrorMessage(error))
+      }
+    } finally { setSubmitting(false) }
   }
 
   return (
@@ -174,11 +236,16 @@ function SeatSelectionPage() {
                   {selectedSeats.map((seat) => <li key={seat.id}><Badge variant="danger">Fila {seat.row} · Butaca {seat.number}</Badge></li>)}
                 </ul>
               )}
-              <div className="border-t border-border pt-4">
-                <Button className="w-full" disabled title="La reserva y la compra estarán disponibles cuando el backend publique su contrato.">
-                  Continuar · pendiente de reservas
-                </Button>
-                <p className="mt-3 text-xs leading-5 text-text-secondary">La selección es temporal y no bloquea butacas. La confirmación y el precio requieren los contratos de reservas y facturación.</p>
+              <div className="grid gap-4 border-t border-border pt-4">
+                <Input label="ID de tipo de entrada" type="number" min="1" step="1" value={ticketType} onChange={(event) => setTicketType(event.target.value)} helperText="Catálogo sin endpoint; ingresá un ID existente." error={!isPositiveInteger(ticketType) ? "Debe ser un entero mayor que cero." : ""} />
+                <Input label="Precio por entrada" type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} helperText="El contrato recibe el precio desde el frontend." error={!isValidPrice(price) ? "Ingresá un precio válido igual o mayor que cero." : ""} />
+                <Input label="ID de promoción (opcional)" type="number" min="1" step="1" value={promotion} onChange={(event) => setPromotion(event.target.value)} helperText="Dejalo vacío si no aplicás promoción." error={promotion && !isPositiveInteger(promotion) ? "Debe ser un entero mayor que cero o quedar vacío." : ""} />
+                {actionMessage && <p className="text-sm text-text-primary" role="status">{actionMessage}</p>}
+                <Button loading={submitting} disabled={!selectedSeats.length || !isPositiveInteger(ticketType) || !isValidPrice(price) || Boolean(promotion.trim() && !isPositiveInteger(promotion))} onClick={() => submitPurchase("reservation")}>Crear reserva</Button>
+                <Input label="ID de forma de pago" type="number" min="1" step="1" value={payment} onChange={(event) => setPayment(event.target.value)} helperText="Compra directa; ingresá un ID existente." error={!isPositiveInteger(payment) ? "Debe ser un entero mayor que cero." : ""} />
+                <Input label="ID de canal de venta" type="number" min="1" step="1" value={channel} onChange={(event) => setChannel(event.target.value)} helperText="Compra directa; ingresá un ID existente." error={!isPositiveInteger(channel) ? "Debe ser un entero mayor que cero." : ""} />
+                <Button variant="outline" loading={submitting} disabled={!selectedSeats.length || !isPositiveInteger(ticketType) || !isValidPrice(price) || !isPositiveInteger(payment) || !isPositiveInteger(channel) || Boolean(promotion.trim() && !isPositiveInteger(promotion))} onClick={() => submitPurchase("invoice")}>Comprar directamente</Button>
+                <p className="text-xs leading-5 text-text-secondary">La API vuelve a validar disponibilidad. No se procesa un pago externo.</p>
               </div>
             </Card>
           </div>

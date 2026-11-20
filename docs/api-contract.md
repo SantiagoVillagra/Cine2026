@@ -648,87 +648,385 @@ Si no hay datos, devuelve `[]`.
 
 ---
 
-# 7. Endpoints y funcionalidades pendientes
+# 7. Reservas y facturación
 
-Las siguientes funcionalidades forman parte del sistema, pero no tienen actualmente un controlador HTTP implementado en el backend de la rama revisada.
+Los siguientes endpoints cuentan con un contrato definido para la integración entre el frontend y el backend.
 
-No consumir estas rutas desde el frontend hasta que backend las implemente y confirme sus contratos.
+**Importante:** que un endpoint esté documentado en este contrato no significa necesariamente que ya esté disponible en el entorno desplegado. La implementación y las pruebas de integración deben verificarse contra el backend y Swagger.
 
 ## 7.1. Reservas
 
-Todavía no se encuentra implementado un controlador de reservas.
+### 7.1.1. Crear reserva
 
-Rutas previstas para una futura implementación:
+**POST `/api/reservas`**
 
-| Método | Ruta propuesta                 | Propósito                                       |
-| ------ | ------------------------------ | ----------------------------------------------- |
-| POST   | `/api/reservas`                | Crear una reserva.                              |
-| GET    | `/api/reservas/mis-reservas`   | Consultar las reservas del usuario autenticado. |
-| GET    | `/api/reservas`                | Consultar reservas del sistema.                 |
-| PATCH  | `/api/reservas/{id}/cancelar`  | Cancelar una reserva.                           |
-| POST   | `/api/reservas/{id}/confirmar` | Confirmar una reserva y generar su factura.     |
+- **Acceso:** Client.
+- **Uso:** crear una reserva para una función y las butacas seleccionadas.
 
-Estas rutas son propuestas y no deben considerarse endpoints disponibles.
+**Body:**
 
-### Consideraciones para su futura implementación
+```json
+{
+  "idFuncion": 250,
+  "detalles": [
+    {
+      "idButaca": 31,
+      "idTipoEntrada": 1,
+      "precio": 5000,
+      "idPromocion": null
+    },
+    {
+      "idButaca": 32,
+      "idTipoEntrada": 2,
+      "precio": 4000,
+      "idPromocion": 3
+    }
+  ]
+}
+```
 
-- El cliente debe obtenerse del usuario autenticado, no de un `idCliente` enviado libremente por React.
-- El backend debe validar la disponibilidad de cada butaca.
-- Una butaca debe estar asociada a la sala de la función seleccionada.
-- Los precios y descuentos deben calcularse en el backend.
-- La operación debe manejarse mediante transacciones.
-- Los conflictos de disponibilidad deberían responder con `409 Conflict`.
-- La expiración y cancelación deben liberar las ocupaciones correspondientes sin borrar el historial.
+Cada detalle representa una butaca reservada para la función seleccionada.
+
+| Campo                    | Tipo     | Descripción                         |
+| ------------------------ | -------- | ----------------------------------- |
+| idFuncion                | int      | Identificador de la función.        |
+| detalles                 | array    | Entradas incluidas en la reserva.   |
+| detalles[].idButaca      | int      | Identificador de la butaca.         |
+| detalles[].idTipoEntrada | int      | Tipo de entrada seleccionado.       |
+| detalles[].precio        | decimal  | Precio de la entrada.               |
+| detalles[].idPromocion   | int/null | Promoción aplicada, si corresponde. |
+
+**Consideraciones:**
+
+- El cliente se identifica mediante el usuario autenticado.
+- El backend valida que la función exista.
+- El backend valida que las butacas correspondan a la sala de la función.
+- El backend verifica que las butacas estén disponibles.
+- No se permite crear una reserva sin detalles.
+- `idPromocion` puede enviarse como `null`.
+- El precio y la promoción se reciben desde el frontend según el alcance acordado para el proyecto.
+
+**Respuesta 201:**
+
+Devuelve la reserva creada y su identificador, según el DTO de respuesta del backend.
+
+**Errores:**
+
+| Código | Situación                                                  |
+| ------ | ---------------------------------------------------------- |
+| 400    | Body inválido o datos de entrada incorrectos.              |
+| 401    | Usuario no autenticado.                                    |
+| 403    | Usuario sin permisos.                                      |
+| 404    | Función, butaca u otra referencia inexistente.             |
+| 409    | Conflicto con la disponibilidad o el estado de una butaca. |
+| 500    | Error interno del servidor.                                |
+
+### 7.1.2. Listar reservas del usuario autenticado
+
+**GET `/api/reservas/mis-reservas`**
+
+- **Acceso:** Client.
+- **Uso:** consultar las reservas pertenecientes al cliente autenticado.
+
+El backend obtiene el identificador del cliente a partir del JWT. El frontend no debe enviar un `idCliente` para determinar qué reservas consultar.
+
+**Respuesta 200:**
+
+Devuelve la colección de reservas del cliente, con la información correspondiente a cada reserva y sus detalles.
+
+Si no existen reservas, devuelve una lista vacía.
+
+### 7.1.3. Listar reservas del sistema
+
+**GET `/api/reservas`**
+
+- **Acceso:** Admin.
+- **Uso:** consultar las reservas registradas en el sistema.
+
+**Respuesta 200:**
+
+Devuelve la colección de reservas, incluyendo la información necesaria para su consulta y administración.
+
+### 7.1.4. Obtener una reserva por ID
+
+**GET `/api/reservas/{id}`**
+
+- **Acceso:** Client y Admin.
+- **Uso:** consultar el detalle de una reserva.
+
+**Reglas de acceso:**
+
+- Un Client solamente puede consultar sus propias reservas.
+- Un Admin puede consultar cualquier reserva.
+
+**Respuesta 200:**
+
+Devuelve la reserva solicitada con sus datos y detalles.
+
+**Errores:**
+
+| Código | Situación                                       |
+| ------ | ----------------------------------------------- |
+| 401    | Usuario no autenticado.                         |
+| 403    | El cliente intenta consultar una reserva ajena. |
+| 404    | La reserva no existe.                           |
+
+### 7.1.5. Cancelar reserva
+
+**PATCH `/api/reservas/{id}/cancelar`**
+
+- **Acceso:** Client y Admin.
+- **Uso:** cancelar una reserva existente.
+
+**Reglas de acceso:**
+
+- Un Client solamente puede cancelar sus propias reservas.
+- Un Admin puede cancelar cualquier reserva.
+
+La cancelación modifica el estado de la reserva y libera las ocupaciones correspondientes. No elimina físicamente el registro ni su historial.
+
+**Respuesta:**
+
+Devuelve una respuesta satisfactoria cuando la cancelación se procesa correctamente.
+
+**Errores:**
+
+| Código | Situación                                            |
+| ------ | ---------------------------------------------------- |
+| 401    | Usuario no autenticado.                              |
+| 403    | El cliente intenta cancelar una reserva ajena.       |
+| 404    | La reserva no existe.                                |
+| 409    | La reserva no puede cancelarse por su estado actual. |
+
+### 7.1.6. Confirmar reserva
+
+**POST `/api/reservas/{id}/confirmar`**
+
+- **Acceso:** Client y Admin.
+- **Uso:** confirmar una reserva y generar su factura.
+
+**Body:**
+
+```json
+{
+  "idFormaPago": 1,
+  "idCanalVenta": 1
+}
+```
+
+| Campo        | Tipo | Descripción                        |
+| ------------ | ---- | ---------------------------------- |
+| idFormaPago  | int  | Identificador de la forma de pago. |
+| idCanalVenta | int  | Identificador del canal de venta.  |
+
+**Reglas de acceso:**
+
+- Un Client solamente puede confirmar sus propias reservas.
+- Un Admin puede confirmar cualquier reserva.
+- Cuando un Admin confirma una reserva, la factura se genera a nombre del cliente propietario de esa reserva, no del administrador que ejecutó la operación.
+
+La confirmación genera la factura asociada a la reserva. No se integra una pasarela de pago: la operación registra la confirmación y genera la factura dentro del alcance del proyecto.
+
+**Respuesta:**
+
+Devuelve una respuesta satisfactoria cuando la reserva se confirma y se genera la factura.
+
+**Errores:**
+
+| Código | Situación                                             |
+| ------ | ----------------------------------------------------- |
+| 400    | Body inválido o referencias incorrectas.              |
+| 401    | Usuario no autenticado.                               |
+| 403    | El cliente intenta confirmar una reserva ajena.       |
+| 404    | La reserva o alguna referencia no existe.             |
+| 409    | La reserva no puede confirmarse por su estado actual. |
+| 500    | Error interno del servidor.                           |
+
+### 7.1.7. Estados de una reserva
+
+La reserva conserva su registro durante todo su ciclo de vida.
+
+- `estado = true`: reserva activa. Puede encontrarse pendiente o confirmada.
+- `estado = false`: reserva cancelada.
+- `fechaHoraConfirmacion = null`: reserva pendiente de confirmación.
+- `fechaHoraConfirmacion` con valor: reserva confirmada.
+
+No se contempla la expiración automática de reservas dentro del alcance actual del proyecto.
 
 ## 7.2. Facturación
 
-Actualmente no se encuentra implementado un controlador de facturas.
+### 7.2.1. Registrar factura directa
 
-Rutas previstas:
+**POST `/api/facturas`**
 
-| Método | Ruta propuesta       | Propósito                    |
-| ------ | -------------------- | ---------------------------- |
-| POST   | `/api/facturas`      | Registrar una venta directa. |
-| GET    | `/api/facturas/{id}` | Consultar una factura.       |
+- **Acceso:** Client y Admin.
+- **Uso:** registrar una venta directa, sin una reserva previa.
 
-Los contratos definitivos de request, response y permisos deben confirmarse cuando se implemente esta funcionalidad.
+**Body:**
 
-El esquema permite distinguir ventas provenientes de reservas de ventas directas:
+```json
+{
+  "idCliente": 15,
+  "idFormaPago": 1,
+  "idCanalVenta": 1,
+  "detalles": [
+    {
+      "idFuncion": 250,
+      "idButaca": 31,
+      "idTipoEntrada": 1,
+      "precio": 5000,
+      "idPromocion": null
+    }
+  ]
+}
+```
 
-- `Facturas.idReserva` puede ser `NULL`.
-- `DetallesFacturas.idDetalleReserva` puede ser `NULL`.
+| Campo                    | Tipo     | Descripción                         |
+| ------------------------ | -------- | ----------------------------------- |
+| idCliente                | int      | Cliente al que se emite la factura. |
+| idFormaPago              | int      | Forma de pago seleccionada.         |
+| idCanalVenta             | int      | Canal de venta seleccionado.        |
+| detalles                 | array    | Entradas incluidas en la factura.   |
+| detalles[].idFuncion     | int      | Función de la entrada.              |
+| detalles[].idButaca      | int      | Butaca correspondiente.             |
+| detalles[].idTipoEntrada | int      | Tipo de entrada.                    |
+| detalles[].precio        | decimal  | Precio de la entrada.               |
+| detalles[].idPromocion   | int/null | Promoción aplicada, si corresponde. |
 
-## 7.3. Clientes y registro
+**Reglas según el rol:**
 
-El backend dispone de lógica de clientes utilizada por el login, pero actualmente no se encuentra un controlador de clientes con endpoints públicos de registro, consulta o edición.
+- Para un Client, el cliente se identifica a partir del usuario autenticado.
+- Para un Admin, el cliente se indica mediante `idCliente` en el body.
 
-No asumir que existen rutas como `/api/clientes`, `/api/registro` o similares hasta que se publiquen en Swagger.
+**Consideraciones:**
+
+- La operación registra una venta directa, sin asociarla a una reserva.
+- Se deben enviar los detalles de las entradas.
+- `idPromocion` puede ser `null`.
+- El precio y la promoción se reciben desde el frontend según el alcance acordado para el proyecto.
+- No se integra una pasarela de pago.
+
+**Respuesta:**
+
+Devuelve una respuesta satisfactoria cuando la factura se registra correctamente, incluyendo el identificador de la factura según el DTO de respuesta del backend.
+
+**Errores:**
+
+| Código | Situación                                                  |
+| ------ | ---------------------------------------------------------- |
+| 400    | Body inválido o datos incorrectos.                         |
+| 401    | Usuario no autenticado.                                    |
+| 403    | Usuario sin permisos.                                      |
+| 404    | Cliente, función, butaca u otra referencia inexistente.    |
+| 409    | Conflicto con la disponibilidad o el estado de una butaca. |
+| 500    | Error interno del servidor.                                |
+
+### 7.2.2. Listar facturas del sistema
+
+**GET `/api/facturas`**
+
+- **Acceso:** Admin.
+- **Uso:** consultar todas las facturas registradas en el sistema.
+
+**Respuesta 200:**
+
+Devuelve la colección de facturas con sus datos y detalles correspondientes.
+
+### 7.2.3. Listar facturas del usuario autenticado
+
+**GET `/api/facturas/mis-facturas`**
+
+- **Acceso:** Client.
+- **Uso:** consultar las facturas pertenecientes al cliente autenticado.
+
+El backend obtiene el identificador del cliente a partir del JWT.
+
+**Respuesta 200:**
+
+Devuelve la colección de facturas del cliente.
+
+Si no existen facturas, devuelve una lista vacía.
+
+### 7.2.4. Obtener factura por ID
+
+**GET `/api/facturas/{id}`**
+
+- **Acceso:** Client y Admin.
+- **Uso:** consultar una factura específica.
+
+**Reglas de acceso:**
+
+- Un Client solamente puede consultar sus propias facturas.
+- Un Admin puede consultar cualquier factura.
+
+**Respuesta 200:**
+
+Devuelve los datos de la factura y sus detalles.
+
+**Errores:**
+
+| Código | Situación                                       |
+| ------ | ----------------------------------------------- |
+| 401    | Usuario no autenticado.                         |
+| 403    | El cliente intenta consultar una factura ajena. |
+| 404    | La factura no existe.                           |
+
+## 7.3. Catálogos utilizados en reservas y facturación
+
+Actualmente no se cuenta con endpoints específicos para consultar los catálogos de:
+
+- Tipos de entrada.
+- Formas de pago.
+- Canales de venta.
+- Promociones.
+
+Para el alcance actual del proyecto, las opciones pueden mantenerse definidas en el frontend.
+
+**Importante:** los identificadores utilizados deben corresponder a registros existentes en la base de datos. No se deben inventar IDs suponiendo que coinciden con los valores de la base.
+
+## 7.4. Consideraciones generales
+
+- El cliente autenticado se determina mediante el JWT cuando corresponde.
+- La disponibilidad de las butacas debe validarse en el backend al registrar una reserva o una venta directa.
+- Las butacas deben pertenecer a la sala de la función seleccionada.
+- Una operación que involucra varias entradas debe mantener la consistencia de los datos.
+- Las reservas canceladas conservan su historial.
+- La confirmación de una reserva genera una factura.
+- Las ventas directas generan facturas sin reserva asociada.
+- No se contempla la expiración automática de reservas.
+- No se integra una pasarela de pago.
+- Los códigos de error y formatos de respuesta deben manejarse según lo documentado para cada endpoint.
 
 ---
 
-# 8. Resumen de endpoints disponibles
+# 8. Resumen de endpoints
 
-| Método | Ruta                                      | Estado       | Acceso previsto                      |
-| ------ | ----------------------------------------- | ------------ | ------------------------------------ |
-| POST   | `/api/login`                              | Implementado | Público                              |
-| GET    | `/api/peliculas`                          | Implementado | Público                              |
-| GET    | `/api/peliculas/{id}`                     | Implementado | Sin restricción aplicada actualmente |
-| POST   | `/api/peliculas`                          | Implementado | Admin previsto                       |
-| PUT    | `/api/peliculas/{id}/estado`              | Implementado | Admin previsto                       |
-| POST   | `/api/funciones`                          | Implementado | Admin previsto                       |
-| GET    | `/api/funciones`                          | Implementado | Público                              |
-| GET    | `/api/funciones/{id}/butacas`             | Implementado | Público                              |
-| GET    | `/api/estadisticas/ingresos-por-mes`      | Implementado | Admin previsto                       |
-| GET    | `/api/estadisticas/top-peliculas`         | Implementado | Admin previsto                       |
-| GET    | `/api/estadisticas/ocupacion-por-horario` | Implementado | Admin previsto                       |
-| GET    | `/api/estadisticas/uso-promociones`       | Implementado | Admin previsto                       |
-| POST   | `/api/reservas`                           | Pendiente    | Por definir                          |
-| GET    | `/api/reservas/mis-reservas`              | Pendiente    | Por definir                          |
-| GET    | `/api/reservas`                           | Pendiente    | Por definir                          |
-| PATCH  | `/api/reservas/{id}/cancelar`             | Pendiente    | Por definir                          |
-| POST   | `/api/reservas/{id}/confirmar`            | Pendiente    | Por definir                          |
-| POST   | `/api/facturas`                           | Pendiente    | Por definir                          |
-| GET    | `/api/facturas/{id}`                      | Pendiente    | Por definir                          |
+| Método | Ruta                                      | Estado contractual | Acceso              |
+| ------ | ----------------------------------------- | ------------------ | ------------------- |
+| POST   | `/api/login`                              | Implementado       | Público             |
+| GET    | `/api/peliculas`                          | Implementado       | Público             |
+| GET    | `/api/peliculas/{id}`                     | Implementado       | Público actualmente |
+| POST   | `/api/peliculas`                          | Implementado       | Admin previsto      |
+| PUT    | `/api/peliculas/{id}/estado`              | Implementado       | Admin previsto      |
+| POST   | `/api/funciones`                          | Implementado       | Admin previsto      |
+| GET    | `/api/funciones`                          | Implementado       | Público             |
+| GET    | `/api/funciones/{id}/butacas`             | Implementado       | Público             |
+| GET    | `/api/estadisticas/ingresos-por-mes`      | Implementado       | Admin previsto      |
+| GET    | `/api/estadisticas/top-peliculas`         | Implementado       | Admin previsto      |
+| GET    | `/api/estadisticas/ocupacion-por-horario` | Implementado       | Admin previsto      |
+| GET    | `/api/estadisticas/uso-promociones`       | Implementado       | Admin previsto      |
+| POST   | `/api/reservas`                           | Contrato definido  | Client              |
+| GET    | `/api/reservas/mis-reservas`              | Contrato definido  | Client              |
+| GET    | `/api/reservas`                           | Contrato definido  | Admin               |
+| GET    | `/api/reservas/{id}`                      | Contrato definido  | Client / Admin      |
+| PATCH  | `/api/reservas/{id}/cancelar`             | Contrato definido  | Client / Admin      |
+| POST   | `/api/reservas/{id}/confirmar`            | Contrato definido  | Client / Admin      |
+| POST   | `/api/facturas`                           | Contrato definido  | Client / Admin      |
+| GET    | `/api/facturas`                           | Contrato definido  | Admin               |
+| GET    | `/api/facturas/mis-facturas`              | Contrato definido  | Client              |
+| GET    | `/api/facturas/{id}`                      | Contrato definido  | Client / Admin      |
+
+**Aclaración:** "Contrato definido" indica que el request, el propósito y las reglas de acceso están documentados. No equivale por sí solo a confirmar que la implementación esté desplegada y operativa. Para comprobarlo, consultar el código del backend y Swagger.
 
 ---
 
@@ -796,20 +1094,87 @@ Para mostrar el plano de butacas:
 
 La disponibilidad mostrada en pantalla no garantiza que una butaca siga libre cuando se intente reservar.
 
+## 9.6. Reservas
+
+Para crear una reserva:
+
+1. Obtener la función seleccionada.
+2. Consultar sus butacas mediante `GET /api/funciones/{id}/butacas`.
+3. Permitir seleccionar únicamente butacas que no estén ocupadas.
+4. Enviar la función y los detalles seleccionados a `POST /api/reservas`.
+5. Obtener del backend la reserva creada.
+6. Mostrar el resultado de la operación sin asumir que fue exitosa antes de recibir una respuesta satisfactoria.
+
+Para consultar las reservas del cliente:
+
+- Utilizar `GET /api/reservas/mis-reservas`.
+- No enviar un `idCliente` para filtrar las reservas propias.
+
+Para consultar reservas desde administración:
+
+- Utilizar `GET /api/reservas`.
+- Para consultar una reserva específica, utilizar `GET /api/reservas/{id}`.
+
+Para cancelar una reserva:
+
+- Utilizar `PATCH /api/reservas/{id}/cancelar`.
+- Actualizar la interfaz únicamente después de recibir una respuesta satisfactoria.
+
+Para confirmar una reserva:
+
+- Utilizar `POST /api/reservas/{id}/confirmar`.
+- Enviar `idFormaPago` e `idCanalVenta`.
+- La operación genera la factura asociada a la reserva.
+
+## 9.7. Facturación
+
+Para consultar las facturas:
+
+- Los clientes deben utilizar `GET /api/facturas/mis-facturas`.
+- Los administradores deben utilizar `GET /api/facturas`.
+- Para consultar una factura individual, utilizar `GET /api/facturas/{id}`.
+
+Para registrar una venta directa:
+
+1. Obtener la función y las butacas seleccionadas.
+2. Preparar los detalles de las entradas.
+3. Enviar los datos a `POST /api/facturas`.
+4. Si el usuario es Client, el backend identifica al cliente mediante el JWT.
+5. Si el usuario es Admin, enviar el `idCliente` correspondiente.
+6. Mostrar la factura o el resultado devuelto por el backend.
+
+## 9.8. Catálogos de reservas y facturación
+
+Como no existen endpoints específicos para los catálogos de tipos de entrada, formas de pago, canales de venta y promociones, las opciones se mantienen definidas en el frontend para el alcance actual del proyecto.
+
+Los identificadores enviados deben coincidir con los registros existentes en la base de datos.
+
+Los precios y promociones se envían desde el frontend de acuerdo con las decisiones de alcance del proyecto.
+
 ---
 
 # 10. Consideraciones técnicas pendientes del backend
 
 Antes de considerar completa la integración del frontend, deben revisarse los siguientes puntos:
 
-1. **Autorización:** habilitar los atributos `[Authorize]` y `[Authorize(Roles = "Admin")]` correspondientes. Actualmente hay restricciones comentadas.
-2. **CORS:** configurar una política que permita las solicitudes desde el origen utilizado por Vite durante el desarrollo.
+1. **Autorización:** verificar que los atributos `[Authorize]` y `[Authorize(Roles = "Admin")]` estén habilitados en los controladores correspondientes. Actualmente existen restricciones comentadas en algunos controladores.
+2. **CORS:** mantener una política que permita las solicitudes desde el origen utilizado por Vite durante el desarrollo.
 3. **Login:** mantener la clave de firma JWT fuera del código fuente y utilizar configuración segura.
-4. **Reservas:** implementar el controlador, DTOs, servicios y repositorios correspondientes.
-5. **Facturación:** implementar los endpoints y definir sus DTOs.
-6. **Clientes:** definir si se necesita un endpoint de registro y qué información podrá consultar o modificar el cliente.
-7. **Swagger:** mantener la documentación actualizada con los contratos reales de request y response.
-8. **Errores:** procurar que los errores tengan formatos consistentes para facilitar su manejo desde React.
+4. **Reservas y facturación:** verificar que los endpoints definidos en la sección 7 estén implementados y coincidan con los contratos documentados.
+5. **Swagger:** mantener actualizada la documentación con los contratos reales de request y response.
+6. **Errores:** procurar que los errores tengan formatos consistentes para facilitar su manejo desde React.
+
+### Decisiones de alcance del proyecto
+
+Para el desarrollo actual se aceptan las siguientes simplificaciones:
+
+- Los precios y las promociones se reciben desde el frontend.
+- Los catálogos de tipos de entrada, formas de pago, canales de venta y promociones pueden mantenerse definidos en el frontend.
+- No se contempla la expiración automática de reservas.
+- La confirmación de una reserva genera una factura, sin integración con una pasarela de pago.
+- Se mantienen los códigos y formatos de error definidos por el backend, aunque algunos errores puedan terminar respondiendo con `500`.
+
+Estas decisiones corresponden al alcance académico del proyecto y no deben modificarse unilateralmente durante la integración.
 
 ---
 
@@ -818,16 +1183,21 @@ Antes de considerar completa la integración del frontend, deben revisarse los s
 Al desarrollar o modificar el frontend:
 
 1. Leer `agents.md`, `docs/database.md` y este documento antes de trabajar con la API.
-2. Respetar los nombres de propiedades y estructuras JSON definidos por los DTOs actuales.
-3. No inventar endpoints ni asumir que las rutas pendientes ya están implementadas.
-4. No enviar información sensible o datos que deban ser determinados por el servidor como si fueran confiables.
-5. No calcular precios, descuentos ni disponibilidad definitiva desde React.
-6. Mantener las llamadas HTTP separadas de los componentes visuales.
-7. No reemplazar silenciosamente las llamadas reales por mocks.
-8. No considerar exitosa una operación hasta recibir una respuesta satisfactoria del backend.
-9. Manejar correctamente los errores HTTP.
-10. Si falta un contrato o existe una contradicción entre este documento y el código, señalarlo antes de implementar una solución.
-11. Considerar Swagger y los DTOs del backend como referencia para los contratos efectivamente implementados.
-12. Mantener separados los contratos implementados y las propuestas de funcionalidades futuras.
+2. Respetar los nombres de propiedades y estructuras JSON definidos por los contratos y DTOs del backend.
+3. No inventar endpoints ni asumir que una ruta está implementada sin verificarlo.
+4. Utilizar la instancia centralizada de Axios y mantener las llamadas HTTP en la capa de servicios.
+5. Incorporar el token JWT mediante la configuración centralizada cuando corresponda.
+6. No reemplazar silenciosamente las llamadas reales por mocks.
+7. No considerar exitosa una operación hasta recibir una respuesta satisfactoria del backend.
+8. Manejar correctamente los errores HTTP y sus distintos formatos.
+9. Respetar las reglas de acceso por rol documentadas para cada endpoint.
+10. Para las operaciones propias de un cliente, utilizar la identidad obtenida mediante el JWT y no enviar identificadores de usuario innecesarios.
+11. Mantener los contratos de reservas y facturación de la sección 7.
+12. Utilizar los identificadores válidos de los catálogos definidos para el proyecto.
+13. No agregar endpoints de catálogos que no estén implementados.
+14. Respetar las decisiones de alcance del proyecto: precios y promociones enviados desde el frontend, catálogos definidos en frontend, ausencia de expiración automática y confirmación sin pasarela de pago.
+15. Si falta un contrato o existe una contradicción entre este documento y el código del backend, señalarlo antes de implementar una solución.
+16. Considerar Swagger y los DTOs del backend como referencia para verificar los contratos efectivamente implementados.
+17. Mantener diferenciados los endpoints implementados de aquellos cuyo contrato está definido pero cuya implementación todavía no fue verificada.
 
-**Regla principal:** el frontend debe adaptarse al contrato real del backend. No debe inventar ni asumir comportamientos que el servidor todavía no ofrece.
+**Regla principal:** el frontend debe adaptarse al contrato acordado y a la implementación real del backend. No debe inventar rutas, propiedades ni comportamientos que no estén definidos.
