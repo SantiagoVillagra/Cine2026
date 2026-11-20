@@ -22,10 +22,38 @@ function SeatSelectionPage() {
   const [seatState, setSeatState] = useState({ requestKey: null, isLoading: true, error: null, data: [] })
   const [functionState, setFunctionState] = useState({ requestKey: null, isLoading: true, error: null, notFound: false, data: null })
   const [selectionState, setSelectionState] = useState({ requestKey: null, ids: [] })
+  const [timeRemaining, setTimeRemaining] = useState(300)
+  const [isExpired, setIsExpired] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [actionMessage, setActionMessage] = useState('')
   const submissionLock = useRef(false)
+  const timerExpired = useRef(false)
+  const expirationAlertShown = useRef(false)
+  const moviePathRef = useRef('/')
+  const remainingRef = useRef(300)
   const requestKey = `${funcionId}:${retryKey}`
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      const nextRemaining = Math.max(remainingRef.current - 1, 0)
+      remainingRef.current = nextRemaining
+      setTimeRemaining(nextRemaining)
+
+      if (nextRemaining === 0) {
+        window.clearInterval(intervalId)
+        timerExpired.current = true
+        setIsExpired(true)
+
+        if (!expirationAlertShown.current) {
+          expirationAlertShown.current = true
+          window.alert('Se agotó el tiempo disponible para realizar la compra. Volverás al detalle de la película.')
+          navigate(moviePathRef.current, { replace: true })
+        }
+      }
+    }, 1000)
+
+    return () => window.clearInterval(intervalId)
+  }, [navigate])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -86,6 +114,11 @@ function SeatSelectionPage() {
   const functionNotFound = currentFunctionState.notFound || currentSeatState.error?.response?.status === 404
   const isLoading = currentSeatState.isLoading || currentFunctionState.isLoading
   const moviePath = functionInfo?.movieId ? `/pelicula/${functionInfo.movieId}#funciones` : '/'
+  const formattedTime = `${String(Math.floor(timeRemaining / 60)).padStart(2, '0')}:${String(timeRemaining % 60).padStart(2, '0')}`
+
+  useEffect(() => {
+    moviePathRef.current = moviePath
+  }, [moviePath])
 
   const toggleSeat = (seat) => {
     setSelectionState((current) => {
@@ -95,7 +128,7 @@ function SeatSelectionPage() {
   }
 
   const submitPurchase = async () => {
-    if (!selectedSeats.length || submissionLock.current || !isPositiveInteger(funcionId)) return
+    if (!selectedSeats.length || submissionLock.current || timerExpired.current || !isPositiveInteger(funcionId)) return
     submissionLock.current = true
     setSubmitting(true)
     setActionMessage('')
@@ -149,6 +182,15 @@ function SeatSelectionPage() {
           description="Seleccioná una o varias butacas disponibles para esta función."
           actions={<Badge variant="info">Función #{funcionId}</Badge>}
         />
+
+        <div
+          className={`flex items-center justify-between rounded-lg border px-4 py-3 ${timeRemaining <= 60 ? 'border-danger/50 bg-danger/10 text-danger' : 'border-primary/40 bg-primary/10 text-text-primary'}`}
+          role="timer"
+          aria-label={`Tiempo restante: ${formattedTime}`}
+        >
+          <span className="text-sm font-medium">Tiempo restante</span>
+          <span className="font-mono text-lg font-bold tabular-nums">{formattedTime}</span>
+        </div>
 
         {functionInfo && (
           <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -225,7 +267,7 @@ function SeatSelectionPage() {
               )}
               <div className="grid gap-4 border-t border-border pt-4">
                 {actionMessage && <p className="text-sm text-text-primary" role="status">{actionMessage}</p>}
-                <Button loading={submitting} disabled={!selectedSeats.length || submitting || !isPositiveInteger(funcionId)} onClick={submitPurchase}>Comprar entradas</Button>
+                <Button loading={submitting} disabled={!selectedSeats.length || submitting || isExpired || !isPositiveInteger(funcionId)} onClick={submitPurchase}>Comprar entradas</Button>
                 <p className="text-xs leading-5 text-text-secondary">La API vuelve a validar disponibilidad. No se procesa un pago externo.</p>
               </div>
             </Card>
