@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, RefreshCw, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { Plus, RefreshCw, Search, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
-import { getMovies } from '../../services/publicCatalogService.js'
 import { getClassifications, getDirectors } from '../../services/movieCatalogService.js'
-import { setMovieActive } from '../../services/adminMovieService.js'
+import { getAdminMovies, setMovieActive } from '../../services/adminMovieService.js'
 import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 import { formatMovieDate, mapAdminMovies, updateMovieActive } from '../../utils/adminMovies.js'
 import { useAlerts } from '../../hooks/useAlerts.js'
@@ -13,13 +12,14 @@ function MoviesPage() {
   const [retryKey, setRetryKey] = useState(0)
   const [result, setResult] = useState({ requestKey: null, data: [], classifications: new Map(), directors: new Map(), error: null })
   const [pendingId, setPendingId] = useState(null)
+  const [search, setSearch] = useState('')
   const operationLock = useRef(false)
   const { showAlert } = useAlerts()
 
   useEffect(() => {
     const controller = new AbortController()
     Promise.all([
-      getMovies({ signal: controller.signal }),
+      getAdminMovies({ signal: controller.signal }),
       getClassifications({ signal: controller.signal }),
       getDirectors({ signal: controller.signal }),
     ]).then(([movies, classifications, directors]) => {
@@ -38,6 +38,15 @@ function MoviesPage() {
 
   const current = result.requestKey === retryKey ? result : null
   const status = !current ? 'loading' : current.error ? 'error' : current.data.length === 0 ? 'empty' : 'success'
+  const visibleMovies = useMemo(() => {
+    if (!current) return []
+    const normalizedSearch = search.trim().replace(/\s+/g, ' ').toLocaleLowerCase('es')
+    return current.data
+      .filter((movie) => movie.titulo?.replace(/\s+/g, ' ').trim().toLocaleLowerCase('es').includes(normalizedSearch))
+      .sort((a, b) => Number(b.activa === true) - Number(a.activa === true)
+        || (a.titulo || '').localeCompare(b.titulo || '', 'es', { sensitivity: 'base' })
+        || Number(a.idPelicula) - Number(b.idPelicula))
+  }, [current, search])
 
   const applyStatus = async (movie, nextActive) => {
     if (operationLock.current) return
@@ -72,10 +81,17 @@ function MoviesPage() {
       {status === 'loading' && <Card className="flex min-h-64 items-center justify-center"><Loading text="Cargando películas…" /></Card>}
       {status === 'error' && <EmptyState title="No se pudo cargar el catálogo" description={getApiErrorMessage(current.error)} action={<Button variant="outline" icon={<RefreshCw size={16} />} onClick={() => setRetryKey((key) => key + 1)}>Reintentar</Button>} />}
       {status === 'empty' && <EmptyState title="Todavía no hay películas" description="Cuando existan películas registradas, aparecerán en este listado." action={<Link className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-text-primary" to="/admin/peliculas/nueva">Crear película</Link>} />}
-      {status === 'success' && <Card padding="none" className="overflow-hidden"><div className="overflow-x-auto">
+      {status === 'success' && <>
+        <label className="relative block max-w-md">
+          <Search aria-hidden="true" size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+          <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por título" aria-label="Buscar películas por título" className="min-h-11 w-full rounded-md border border-border bg-surface-secondary pl-10 pr-4 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+        </label>
+        {visibleMovies.length === 0
+          ? <EmptyState title="No hay películas que coincidan" description="Probá modificar la búsqueda para ver otras películas." />
+          : <Card padding="none" className="overflow-hidden"><div className="overflow-x-auto">
         <table className="w-full min-w-[850px] text-left text-sm"><thead className="bg-surface-secondary text-xs uppercase tracking-wide text-text-secondary"><tr>
           <th className="px-5 py-4">Película</th><th className="px-5 py-4">Duración</th><th className="px-5 py-4">Clasificación / dirección</th><th className="px-5 py-4">Estreno</th><th className="px-5 py-4">Estado</th><th className="px-5 py-4 text-right">Acción</th>
-        </tr></thead><tbody className="divide-y divide-border">{current.data.map((movie) => {
+        </tr></thead><tbody className="divide-y divide-border">{visibleMovies.map((movie) => {
           const knownStatus = typeof movie.activa === 'boolean'
           return <tr key={movie.idPelicula} className="align-middle">
             <td className="px-5 py-4"><p className="font-semibold text-text-primary">{movie.titulo || 'Sin título'}</p><p className="mt-1 text-xs text-text-secondary">ID {movie.idPelicula}</p></td>
@@ -87,6 +103,7 @@ function MoviesPage() {
           </tr>
         })}</tbody></table>
       </div></Card>}
+      </>}
     </main>
   )
 }

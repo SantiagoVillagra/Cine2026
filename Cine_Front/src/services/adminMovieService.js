@@ -5,6 +5,11 @@ export async function createMovie(movie) {
   return data
 }
 
+export async function getAdminMovies({ signal } = {}) {
+  const { data } = await apiClient.get('/api/peliculas', { signal })
+  return data
+}
+
 export async function setMovieActive(id, activa) {
   await apiClient.put(`/api/peliculas/${id}/estado`, { activa })
 }
