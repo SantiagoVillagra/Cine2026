@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, RefreshCw, Trash2 } from 'lucide-react'
-import { Badge, Button, Card, EmptyState, Input, Loading, PageHeader } from '../../components/common/index.js'
+import { Badge, Button, Card, DatePicker, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
 import { deleteShowtime, getAdminShowtimes } from '../../services/adminShowtimeService.js'
 import { getMovies } from '../../services/publicCatalogService.js'
 import { getAsyncState } from '../../utils/asyncState.js'
@@ -9,24 +9,23 @@ import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 import { filterUpcomingActiveShowtimes, formatShowtimeDate, mapAdminShowtimes } from '../../utils/adminShowtimes.js'
 import { useAlerts } from '../../hooks/useAlerts.js'
 
-const initialFilters = { fecha: '', movieId: '' }
+const initialFilters = { fecha: '' }
 
 function ShowtimesPage() {
   const [draft, setDraft] = useState(initialFilters)
   const [filters, setFilters] = useState(initialFilters)
-  const [filterError, setFilterError] = useState('')
+  const [invalidDate, setInvalidDate] = useState(false)
   const [retryKey, setRetryKey] = useState(0)
   const [result, setResult] = useState({ key: null, data: [], error: null })
   const [pendingId, setPendingId] = useState(null)
   const operationLock = useRef(false)
   const { showAlert } = useAlerts()
-  const requestKey = `${filters.fecha}|${filters.movieId}|${retryKey}`
+  const requestKey = `${filters.fecha}|${retryKey}`
 
   useEffect(() => {
     const controller = new AbortController()
-    const movieId = filters.movieId ? Number(filters.movieId) : undefined
     Promise.all([
-      getAdminShowtimes({ fecha: filters.fecha || undefined, movieId, signal: controller.signal }),
+      getAdminShowtimes({ fecha: filters.fecha || undefined, signal: controller.signal }),
       getMovies({ signal: controller.signal }),
     ])
       .then(([showtimes, movies]) => {
@@ -46,18 +45,16 @@ function ShowtimesPage() {
 
   const applyFilters = (event) => {
     event.preventDefault()
-    if (draft.movieId && (!/^\d+$/.test(draft.movieId) || Number(draft.movieId) < 1)) {
-      setFilterError('El ID de película debe ser un entero positivo.')
+    if (invalidDate) {
       return
     }
-    setFilterError('')
     setFilters({ ...draft })
   }
 
   const clearFilters = () => {
     setDraft(initialFilters)
     setFilters(initialFilters)
-    setFilterError('')
+    setInvalidDate(false)
   }
 
   const requestShowtimeDeletion = async (showtime) => {
@@ -101,12 +98,9 @@ function ShowtimesPage() {
     <PageHeader title="Funciones" description="Consultá la programación registrada y filtrá por los criterios disponibles en la API."
       actions={<Link className="inline-flex min-h-10 items-center gap-2 rounded-md border border-primary bg-primary px-4 py-2 text-sm font-medium text-text-primary hover:bg-primary-hover" to="/admin/funciones/nueva"><Plus size={16} />Nueva función</Link>} />
     <Card className="space-y-4">
-      <div><h2 className="font-semibold text-text-primary">Filtros</h2><p className="mt-1 text-sm text-text-secondary">La API admite fecha e ID de película, de forma individual o combinada.</p></div>
+      <div><h2 className="font-semibold text-text-primary">Filtros</h2><p className="mt-1 text-sm text-text-secondary">Filtrá las funciones por fecha.</p></div>
       <form className="flex flex-col gap-4 sm:flex-row sm:items-end" onSubmit={applyFilters}>
-        <div className="grid flex-1 gap-4 sm:grid-cols-2">
-          <Input label="Fecha" type="date" value={draft.fecha} onChange={(event) => setDraft((value) => ({ ...value, fecha: event.target.value }))} />
-          <Input label="ID de película" type="number" min="1" step="1" value={draft.movieId} onChange={(event) => setDraft((value) => ({ ...value, movieId: event.target.value }))} error={filterError} />
-        </div>
+        <div className="w-full max-w-sm"><DatePicker label="Fecha" value={draft.fecha} onChange={(event) => setDraft((value) => ({ ...value, fecha: event.target.value }))} onValidityChange={(valid) => setInvalidDate(!valid)} error={invalidDate ? 'Ingresá una fecha válida en formato dd/mm/yyyy.' : undefined} /></div>
         <div className="flex gap-2"><Button type="submit">Aplicar</Button><Button type="button" variant="outline" onClick={clearFilters}>Limpiar</Button></div>
       </form>
     </Card>
