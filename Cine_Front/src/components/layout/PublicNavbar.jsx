@@ -61,7 +61,7 @@ function PublicNavbar() {
           {isAuthenticated ? (
             <>
               <Link
-                to={user.role === 'Admin' ? '/admin/dashboard' : '/cliente/reservas'}
+                to={user.role === 'Admin' ? '/admin/dashboard' : '/cliente/mis-compras'}
                 onClick={closeMenu}
                 className="rounded-md px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-secondary"
               >

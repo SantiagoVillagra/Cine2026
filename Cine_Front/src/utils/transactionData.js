@@ -1,25 +1,11 @@
-export const emptyCatalogIds = { ticketType: '', paymentMethod: '', salesChannel: '' }
-
 export function isPositiveInteger(value) {
   const normalized = String(value ?? '').trim()
   return /^\d+$/.test(normalized) && Number.isSafeInteger(Number(normalized)) && Number(normalized) > 0
 }
 
-export function isValidPrice(value) {
-  const normalized = String(value ?? '').trim()
-  return normalized !== '' && Number.isFinite(Number(normalized)) && Number(normalized) >= 0
-}
-
 export function getResourceId(value, key) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   return value[key] ?? null
-}
-
-export function getReservationStatus(value) {
-  if (value?.estado === false) return { label: 'Cancelada', variant: 'danger' }
-  if (value?.fechaHoraConfirmacion) return { label: 'Confirmada', variant: 'success' }
-  if (value?.estado === true) return { label: 'Pendiente', variant: 'warning' }
-  return { label: 'Estado informado por API', variant: 'default' }
 }
 
 export function formatData(value) {

@@ -1,17 +1,13 @@
-import { Badge, Card } from '../common/index.js'
-import { formatData, getResourceId, getReservationStatus, readableLabel } from '../../utils/transactionData.js'
+import { Card } from '../common/index.js'
+import { formatData, getResourceId, readableLabel } from '../../utils/transactionData.js'
 
-function RecordView({ kind, record, compact = false }) {
-  const isReservation = kind === 'reservation'
-  const idKey = isReservation ? 'idReserva' : 'idFactura'
-  const id = getResourceId(record, idKey)
-  const status = isReservation ? getReservationStatus(record) : null
+function RecordView({ record, compact = false }) {
+  const id = getResourceId(record, 'idFactura')
   if (!record || typeof record !== 'object' || Array.isArray(record)) return <Card>{formatData(record)}</Card>
   const entries = Object.entries(record).filter(([, value]) => value !== undefined)
   return <Card className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 className="font-semibold text-text-primary">{isReservation ? `Reserva ${id ? `#${id}` : ''}` : `Factura ${id ? `#${id}` : ''}`}</h2>
-      {status && <Badge variant={status.variant}>{status.label}</Badge>}
+      <h2 className="font-semibold text-text-primary">{`Factura ${id ? `#${id}` : ''}`}</h2>
     </div>
     <dl className={`grid gap-x-5 gap-y-3 text-sm ${compact ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
       {entries.map(([key, value]) => <div key={key} className="min-w-0">
