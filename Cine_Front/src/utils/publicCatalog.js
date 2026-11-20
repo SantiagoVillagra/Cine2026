@@ -33,6 +33,46 @@ export function mapShowtimes(showtimes) {
   return Array.isArray(showtimes) ? showtimes.map(mapShowtime) : []
 }
 
+export function filterFutureShowtimes(showtimes, now = new Date()) {
+  if (!Array.isArray(showtimes)) return []
+
+  return showtimes.filter((showtime) => {
+    if (typeof showtime.date !== 'string' || typeof showtime.time !== 'string') return false
+
+    const dateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(showtime.date)
+    const timeMatch = /^(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?$/.exec(showtime.time)
+    if (!dateMatch || !timeMatch) return false
+
+    const [, year, month, day] = dateMatch
+    const [, hours, minutes, seconds = '0', fraction = ''] = timeMatch
+    const milliseconds = Number((fraction + '000').slice(0, 3))
+    const showtimeDate = new Date(
+      Number(year), Number(month) - 1, Number(day),
+      Number(hours), Number(minutes), Number(seconds), milliseconds,
+    )
+
+    if (
+      showtimeDate.getFullYear() !== Number(year)
+      || showtimeDate.getMonth() !== Number(month) - 1
+      || showtimeDate.getDate() !== Number(day)
+      || Number(hours) > 23
+      || Number(minutes) > 59
+      || Number(seconds) > 59
+    ) return false
+
+    return showtimeDate > now
+  })
+}
+
+export function filterMoviesWithFutureShowtimes(movies, showtimes) {
+  if (!Array.isArray(movies) || !Array.isArray(showtimes)) return []
+
+  return movies.map((movie) => ({
+    ...movie,
+    showtimes: showtimes.filter((showtime) => showtime.movieId === movie.id),
+  })).filter((movie) => movie.showtimes.length > 0)
+}
+
 export function buildShowtimeParams({ movieId, fecha } = {}) {
   const params = {
     ...(fecha ? { fecha } : {}),
