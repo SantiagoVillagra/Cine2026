@@ -3,6 +3,7 @@ import { ArrowLeft, Clapperboard, Ticket } from 'lucide-react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import SeatMap from '../../components/seats/SeatMap.jsx'
 import { Badge, Button, Card, EmptyState, Loading, PageHeader } from '../../components/common/index.js'
+import { useAlerts } from '../../hooks/useAlerts.js'
 import { getShowtimes } from '../../services/publicCatalogService.js'
 import { getShowtimeSeats } from '../../services/seatService.js'
 import { getAsyncState } from '../../utils/asyncState.js'
@@ -16,6 +17,7 @@ function SeatSelectionPage() {
   const { funcionId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const { showAlert } = useAlerts()
   const routeShowtime = location.state?.showtime
   const hasRouteShowtime = routeShowtime && String(routeShowtime.id) === String(funcionId)
   const [retryKey, setRetryKey] = useState(0)
@@ -25,7 +27,6 @@ function SeatSelectionPage() {
   const [timeRemaining, setTimeRemaining] = useState(300)
   const [isExpired, setIsExpired] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [actionMessage, setActionMessage] = useState('')
   const submissionLock = useRef(false)
   const timerExpired = useRef(false)
   const expirationAlertShown = useRef(false)
@@ -46,14 +47,18 @@ function SeatSelectionPage() {
 
         if (!expirationAlertShown.current) {
           expirationAlertShown.current = true
-          window.alert('Se agotó el tiempo disponible para realizar la compra. Volverás al detalle de la película.')
-          navigate(moviePathRef.current, { replace: true })
+          showAlert({
+            type: 'warning',
+            title: 'Tiempo agotado',
+            message: 'Se agotó el tiempo disponible para realizar la compra. Volverás al detalle de la película.',
+            confirmLabel: 'Volver al detalle',
+          }).then(() => navigate(moviePathRef.current, { replace: true }))
         }
       }
     }, 1000)
 
     return () => window.clearInterval(intervalId)
-  }, [navigate])
+  }, [navigate, showAlert])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -131,7 +136,6 @@ function SeatSelectionPage() {
     if (!selectedSeats.length || submissionLock.current || timerExpired.current || !isPositiveInteger(funcionId)) return
     submissionLock.current = true
     setSubmitting(true)
-    setActionMessage('')
     const body = {
       idFormaPago: 1,
       idCanalVenta: 1,
@@ -147,7 +151,16 @@ function SeatSelectionPage() {
       const response = await createInvoice(body)
       const resourceId = getResourceId(response, 'idFactura')
       if (resourceId) navigate(`/cliente/facturas/${resourceId}`, { state: { created: true } })
-      else setActionMessage('La compra se registró correctamente. La API no incluyó un identificador de factura; podés verificar el resultado en Mis compras.')
+      else {
+        const openPurchases = await showAlert({
+          type: 'success',
+          title: 'Compra registrada',
+          message: 'La compra se registró correctamente. La API no incluyó un identificador de factura; podés verificar el resultado en Mis compras.',
+          confirmLabel: 'Ir a Mis compras',
+          cancelLabel: 'Cerrar',
+        })
+        if (openPurchases) navigate('/cliente/mis-compras')
+      }
     } catch (error) {
       if (error.response?.status === 409) {
         try {
@@ -157,18 +170,46 @@ function SeatSelectionPage() {
             requestKey,
             ids: current.ids.filter((seatId) => freshSeats.some((seat) => seat.id === seatId && !seat.occupied)),
           }))
-          setActionMessage('La disponibilidad cambió. Actualizamos las butacas; revisá tu selección antes de volver a intentar.')
+          await showAlert({
+            type: 'warning',
+            title: 'Cambió la disponibilidad',
+            message: 'Actualizamos las butacas. Revisá tu selección antes de volver a intentar.',
+          })
         } catch (refreshError) {
-          setActionMessage(`La disponibilidad cambió, pero no se pudo actualizar el mapa. ${getApiErrorMessage(refreshError)}`)
+          await showAlert({
+            type: 'error',
+            title: 'No se pudo actualizar el mapa',
+            message: `La disponibilidad cambió, pero no se pudo actualizar el mapa. ${getApiErrorMessage(refreshError)}`,
+          })
         }
       } else {
-        setActionMessage(getApiErrorMessage(error))
+        await showAlert({ type: 'error', title: 'No se pudo completar la compra', message: getApiErrorMessage(error) })
       }
     } finally {
       submissionLock.current = false
       setSubmitting(false)
     }
   }
+
+  const cancelPurchase = async () => {
+    const confirmed = await showAlert({
+      type: 'confirm',
+      title: 'Cancelar compra',
+      message: '¿Estás seguro de que querés cancelar la compra? Volverás al detalle de la película.',
+      confirmLabel: 'Cancelar compra',
+      cancelLabel: 'Continuar comprando',
+    })
+    if (confirmed) navigate(moviePath, { replace: true })
+  }
+
+  const selectedCount = selectedSeats.length
+  const unitPrice = 10000
+  const totalPrice = selectedCount * unitPrice
+  const formatPrice = (amount) => new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(amount)
 
   return (
     <main>
@@ -265,9 +306,14 @@ function SeatSelectionPage() {
                   {selectedSeats.map((seat) => <li key={seat.id}><Badge variant="danger">Fila {seat.row} · Butaca {seat.number}</Badge></li>)}
                 </ul>
               )}
+              <dl className="grid gap-2 border-t border-border pt-4 text-sm">
+                <div className="flex justify-between gap-3"><dt className="text-text-secondary">Entradas</dt><dd className="font-medium text-text-primary">{selectedCount}</dd></div>
+                <div className="flex justify-between gap-3"><dt className="text-text-secondary">Precio por entrada</dt><dd className="font-medium text-text-primary">{formatPrice(unitPrice)}</dd></div>
+                <div className="flex justify-between gap-3 border-t border-border pt-3 text-base"><dt className="font-semibold text-text-primary">Total</dt><dd className="font-bold tabular-nums text-text-primary">{formatPrice(totalPrice)}</dd></div>
+              </dl>
               <div className="grid gap-4 border-t border-border pt-4">
-                {actionMessage && <p className="text-sm text-text-primary" role="status">{actionMessage}</p>}
                 <Button loading={submitting} disabled={!selectedSeats.length || submitting || isExpired || !isPositiveInteger(funcionId)} onClick={submitPurchase}>Comprar entradas</Button>
+                <Button variant="outline" disabled={submitting} onClick={cancelPurchase}>Cancelar compra</Button>
                 <p className="text-xs leading-5 text-text-secondary">La API vuelve a validar disponibilidad. No se procesa un pago externo.</p>
               </div>
             </Card>

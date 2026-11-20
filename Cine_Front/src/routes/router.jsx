@@ -8,6 +8,7 @@ import ProtectedRoute from './ProtectedRoute.jsx';
 import HomePage from '../pages/public/HomePage.jsx';
 import MovieDetailPage from '../pages/public/MovieDetailPage.jsx';
 import DashboardPage from '../pages/admin/DashboardPage.jsx';
+import AdminHomePage from '../pages/admin/AdminHomePage.jsx';
 import MoviesPage from '../pages/admin/MoviesPage.jsx';
 import NewMoviePage from '../pages/admin/NewMoviePage.jsx';
 import ShowtimesPage from '../pages/admin/ShowtimesPage.jsx';
@@ -57,6 +58,10 @@ const routes = [
       {
         element: <AdminLayout />,
         children: [
+          {
+            path: '/admin',
+            element: <AdminHomePage />,
+          },
           {
             path: '/admin/dashboard',
             element: <DashboardPage />,

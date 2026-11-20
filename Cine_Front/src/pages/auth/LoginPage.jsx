@@ -60,9 +60,11 @@ function LoginPage() {
   const submissionLock = useRef(false)
 
   if (isAuthenticated) {
-    const destination = user.role === 'Admin'
-      ? '/admin/dashboard'
-      : location.state?.from || '/cliente/mis-compras'
+    const requestedPath = location.state?.from
+    const roleCompatiblePath = user.role === 'Admin'
+      ? requestedPath?.startsWith('/cliente/') ? null : requestedPath
+      : requestedPath?.startsWith('/admin') ? null : requestedPath
+    const destination = roleCompatiblePath || (user.role === 'Admin' ? '/admin' : '/cliente/mis-compras')
     return <Navigate to={destination} replace />
   }
 
@@ -97,9 +99,10 @@ function LoginPage() {
     try {
       const authenticatedUser = await authenticate({ email: values.email.trim(), password: values.password })
       const requestedPath = location.state?.from
-      const destination = authenticatedUser.role === 'Admin'
-        ? '/admin/dashboard'
-        : requestedPath || '/cliente/mis-compras'
+      const roleCompatiblePath = authenticatedUser.role === 'Admin'
+        ? requestedPath?.startsWith('/cliente/') ? null : requestedPath
+        : requestedPath?.startsWith('/admin') ? null : requestedPath
+      const destination = roleCompatiblePath || (authenticatedUser.role === 'Admin' ? '/admin' : '/cliente/mis-compras')
       navigate(destination, { replace: true })
     } catch (error) {
       const isAuthenticationError = error instanceof InvalidCredentialsError

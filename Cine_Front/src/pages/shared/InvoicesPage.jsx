@@ -4,6 +4,7 @@ import { Button, Card, EmptyState, Input, Loading, PageHeader } from '../../comp
 import RecordView from '../../components/transactions/RecordView.jsx'
 import { createInvoice, getInvoice, getInvoices } from '../../services/invoiceService.js'
 import { useAuth } from '../../hooks/useAuth.js'
+import { useAlerts } from '../../hooks/useAlerts.js'
 import { getApiErrorMessage } from '../../utils/getApiErrorMessage.js'
 import { getResourceId, isPositiveInteger } from '../../utils/transactionData.js'
 
@@ -15,8 +16,9 @@ function InvoicesPage() {
   const [retry, setRetry] = useState(0)
   const [state, setState] = useState({ loading: true, data: null, error: null })
   const [sale, setSale] = useState({ clientId: '', showtimeId: '', seatId: '' })
-  const [saleState, setSaleState] = useState({ busy: false, message: '', error: false })
+  const [saleBusy, setSaleBusy] = useState(false)
   const navigate = useNavigate()
+  const { showAlert } = useAlerts()
   useEffect(() => {
     const controller = new AbortController()
     const request = id ? getInvoice(id, { signal: controller.signal }) : getInvoices({ admin, signal: controller.signal })
@@ -30,14 +32,15 @@ function InvoicesPage() {
     && isPositiveInteger(sale.seatId)
   const submitSale = async (event) => {
     event.preventDefault()
+    if (saleBusy) return
     if (!saleIsValid) {
       const invalidField = admin && !isPositiveInteger(sale.clientId) ? 'ID del cliente'
         : !isPositiveInteger(sale.showtimeId) ? 'ID de función'
           : 'ID de butaca'
-      setSaleState({ busy: false, message: `Corregí ${invalidField}: debe ser válido y, para los IDs, un entero positivo.`, error: true })
+      await showAlert({ type: 'error', title: 'Revisá los datos de la venta', message: `Corregí ${invalidField}: debe ser un entero positivo.` })
       return
     }
-    setSaleState({ busy: true, message: '', error: false })
+    setSaleBusy(true)
     const body = {
       ...(admin ? { idCliente: Number(sale.clientId) } : {}),
       idFormaPago: 1,
@@ -48,39 +51,52 @@ function InvoicesPage() {
     try {
       response = await createInvoice(body)
     } catch (error) {
-      setSaleState({ busy: false, message: getApiErrorMessage(error), error: true })
+      setSaleBusy(false)
+      await showAlert({ type: 'error', title: 'No se pudo registrar la venta', message: getApiErrorMessage(error) })
       return
     }
     const invoiceId = getResourceId(response, 'idFactura')
     if (invoiceId) {
-      setSaleState({ busy: false, message: 'La factura se registró correctamente.', error: false })
+      setSaleBusy(false)
       navigate(root + '/' + invoiceId)
       return
     }
-    setSaleState({ busy: true, message: 'La factura se registró correctamente. Actualizando el historial…', error: false })
     try {
       const refreshedInvoices = await getInvoices({ admin })
       setState({ loading: false, data: refreshedInvoices, error: null })
-      setSaleState({ busy: false, message: 'La factura se registró correctamente y el historial se actualizó.', error: false })
+      await showAlert({ type: 'success', title: 'Venta registrada', message: 'La factura se registró correctamente y el historial se actualizó.' })
     } catch (error) {
-      setSaleState({ busy: false, message: 'La factura se registró correctamente, pero no se pudo actualizar el historial: ' + getApiErrorMessage(error), error: false })
+      await showAlert({ type: 'warning', title: 'Venta registrada', message: 'La factura se registró correctamente, pero no se pudo actualizar el historial: ' + getApiErrorMessage(error) })
+    } finally {
+      setSaleBusy(false)
     }
   }
   if (state.loading) return <main className="mx-auto max-w-7xl px-4 py-10"><Loading text="Cargando facturas…" /></main>
   if (state.error) return <main className="mx-auto max-w-7xl px-4 py-10"><EmptyState title="No se pudieron cargar las facturas" description={getApiErrorMessage(state.error)} action={<Button onClick={() => setRetry((value) => value + 1)}>Reintentar</Button>} /></main>
   if (id) return <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8"><PageHeader title={`Factura #${getResourceId(state.data, 'idFactura') ?? id}`} description="Detalle devuelto por la API." actions={<Link className="text-sm text-primary hover:underline" to={root}>Volver al listado</Link>} /><RecordView kind="invoice" record={state.data} /></main>
   const records = Array.isArray(state.data) ? state.data : []
-  return <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8"><PageHeader title={admin ? 'Facturas' : 'Mis facturas'} description={admin ? 'Facturas registradas en el sistema.' : 'Consultá el historial de tus compras.'} />
-    {admin && <Card><form className="space-y-4" onSubmit={submitSale}><div><h2 className="font-semibold text-text-primary">Venta directa</h2><p className="mt-1 text-sm text-text-secondary">Registra una factura; el backend valida sala y disponibilidad.</p></div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{admin && <Input label="ID del cliente" type="number" min="1" step="1" required value={sale.clientId} onChange={updateSale('clientId')} error={!isPositiveInteger(sale.clientId) ? "Debe ser un entero mayor que cero." : ""} />}
-        <Input label="ID de función" type="number" min="1" step="1" required value={sale.showtimeId} onChange={updateSale('showtimeId')} error={!isPositiveInteger(sale.showtimeId) ? "Debe ser un entero mayor que cero." : ""} />
-        <Input label="ID de butaca" type="number" min="1" step="1" required value={sale.seatId} onChange={updateSale('seatId')} error={!isPositiveInteger(sale.seatId) ? "Debe ser un entero mayor que cero." : ""} />
-      </div>{saleState.message && <p role={saleState.error ? 'alert' : 'status'} className="text-sm text-text-primary">{saleState.message}</p>}<Button type="submit" loading={saleState.busy} disabled={!saleIsValid}>Registrar venta directa</Button>
-     </form></Card>}
-    {records.length === 0 ? <EmptyState title="No hay facturas para mostrar" description="La API devolvió una lista vacía." /> : <div className="grid gap-4">{records.map((item, index) => {
-      const resourceId = getResourceId(item, 'idFactura')
-      return <RecordView key={resourceId ?? index} kind="invoice" record={item} />
-    })}</div>}
+  return <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+    <PageHeader title={admin ? 'Facturas' : 'Mis facturas'} description={admin ? 'Facturas registradas en el sistema.' : 'Consultá el historial de tus compras.'} />
+    {admin && <Card>
+      <form className="space-y-4" onSubmit={submitSale}>
+        <div>
+          <h2 className="font-semibold text-text-primary">Venta directa</h2>
+          <p className="mt-1 text-sm text-text-secondary">Registra una factura; el backend valida sala y disponibilidad.</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Input label="ID del cliente" type="number" min="1" step="1" required value={sale.clientId} onChange={updateSale('clientId')} error={!isPositiveInteger(sale.clientId) ? 'Debe ser un entero mayor que cero.' : ''} />
+          <Input label="ID de función" type="number" min="1" step="1" required value={sale.showtimeId} onChange={updateSale('showtimeId')} error={!isPositiveInteger(sale.showtimeId) ? 'Debe ser un entero mayor que cero.' : ''} />
+          <Input label="ID de butaca" type="number" min="1" step="1" required value={sale.seatId} onChange={updateSale('seatId')} error={!isPositiveInteger(sale.seatId) ? 'Debe ser un entero mayor que cero.' : ''} />
+        </div>
+        <Button type="submit" loading={saleBusy} disabled={!saleIsValid}>Registrar venta directa</Button>
+      </form>
+    </Card>}
+    {records.length === 0
+      ? <EmptyState title="No hay facturas para mostrar" description="La API devolvió una lista vacía." />
+      : <div className="grid gap-4">{records.map((item, index) => {
+        const resourceId = getResourceId(item, 'idFactura')
+        return <RecordView key={resourceId ?? index} kind="invoice" record={item} />
+      })}</div>}
   </main>
 }
 
