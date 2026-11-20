@@ -1,5 +1,45 @@
 [
   {
+    "ContainingType": "CineWebAPI.Controllers.ActoresController",
+    "Method": "GetAll",
+    "RelativePath": "api/Actores",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CineWebAPI.Controllers.ClasificacionesController",
+    "Method": "GetAll",
+    "RelativePath": "api/Clasificaciones",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CineWebAPI.Controllers.ClientesController",
+    "Method": "GetPerfil",
+    "RelativePath": "api/Clientes/perfil",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CineWebAPI.Controllers.DirectoresController",
+    "Method": "GetAll",
+    "RelativePath": "api/Directores",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "CineWebAPI.Controllers.EstadisticasController",
     "Method": "IngresosPorMes",
     "RelativePath": "api/Estadisticas/ingresos-por-mes",
@@ -69,6 +109,16 @@
   },
   {
     "ContainingType": "CineWebAPI.Controllers.FacturasController",
+    "Method": "GetAll",
+    "RelativePath": "api/Facturas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CineWebAPI.Controllers.FacturasController",
     "Method": "CrearVentaDirecta",
     "RelativePath": "api/Facturas",
     "HttpMethod": "POST",
@@ -97,6 +147,16 @@
         "IsRequired": true
       }
     ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CineWebAPI.Controllers.FacturasController",
+    "Method": "GetMisFacturas",
+    "RelativePath": "api/Facturas/mis-facturas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -138,6 +198,22 @@
   },
   {
     "ContainingType": "CineWebAPI.Controllers.FuncionesController",
+    "Method": "Delete",
+    "RelativePath": "api/Funciones/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CineWebAPI.Controllers.FuncionesController",
     "Method": "GetButacas",
     "RelativePath": "api/Funciones/{id}/butacas",
     "HttpMethod": "GET",
@@ -150,6 +226,26 @@
         "IsRequired": true
       }
     ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CineWebAPI.Controllers.GenerosController",
+    "Method": "GetAll",
+    "RelativePath": "api/Generos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CineWebAPI.Controllers.IdiomasController",
+    "Method": "GetAll",
+    "RelativePath": "api/Idiomas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -229,6 +325,16 @@
         "IsRequired": true
       }
     ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CineWebAPI.Controllers.PeliculasController",
+    "Method": "GetActivas",
+    "RelativePath": "api/Peliculas/activas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -314,6 +420,16 @@
     "ContainingType": "CineWebAPI.Controllers.ReservasController",
     "Method": "GetMisReservas",
     "RelativePath": "api/Reservas/mis-reservas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CineWebAPI.Controllers.SalasController",
+    "Method": "GetAll",
+    "RelativePath": "api/Salas",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,

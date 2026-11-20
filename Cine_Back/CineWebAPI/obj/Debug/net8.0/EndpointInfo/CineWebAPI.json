@@ -5,6 +5,54 @@
     "version": "1.0"
   },
   "paths": {
+    "/api/Actores": {
+      "get": {
+        "tags": [
+          "Actores"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Clasificaciones": {
+      "get": {
+        "tags": [
+          "Clasificaciones"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Clientes/perfil": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Directores": {
+      "get": {
+        "tags": [
+          "Directores"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Estadisticas/ingresos-por-mes": {
       "get": {
         "tags": [
@@ -101,6 +149,16 @@
       }
     },
     "/api/Facturas": {
+      "get": {
+        "tags": [
+          "Facturas"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
       "post": {
         "tags": [
           "Facturas"
@@ -124,6 +182,18 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Facturas/mis-facturas": {
+      "get": {
+        "tags": [
+          "Facturas"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -228,6 +298,53 @@
               "format": "int32"
             }
           }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Funciones/{id}": {
+      "delete": {
+        "tags": [
+          "Funciones"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Generos": {
+      "get": {
+        "tags": [
+          "Generos"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Idiomas": {
+      "get": {
+        "tags": [
+          "Idiomas"
         ],
         "responses": {
           "200": {
@@ -366,6 +483,18 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Peliculas/activas": {
+      "get": {
+        "tags": [
+          "Peliculas"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -513,6 +642,18 @@
           }
         }
       }
+    },
+    "/api/Salas": {
+      "get": {
+        "tags": [
+          "Salas"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -557,6 +698,15 @@
           "idTipoEntrada": {
             "type": "integer",
             "format": "int32"
+          },
+          "precio": {
+            "type": "number",
+            "format": "double"
+          },
+          "idPromocion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         },
         "additionalProperties": false
