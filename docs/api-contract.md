@@ -442,7 +442,26 @@ Si no hay resultados, devuelve una lista vacía.
 
 El endpoint devuelve funciones pasadas y futuras, incluyendo funciones de películas inactivas.
 
-## 5.3. Consultar butacas de una función
+## 5.3. Eliminar función
+
+**DELETE `/api/Funciones/{id}`**
+
+- **Estado:** implementado en `FuncionesController.Delete`.
+- **Uso:** eliminar físicamente una función.
+- **Parámetros de ruta:** `id` (int), identificador de la función.
+- **Autorización:** actualmente no requiere autenticación ni rol; `[Authorize(Roles = "Admin")]` está comentado en el controlador.
+
+El servicio devuelve `404` si la función no existe y rechaza la operación con `409` si tiene reservas o facturas asociadas. En caso contrario, el repositorio elimina la función y el controlador responde `204 No Content`. No se eliminan manualmente reservas ni facturas.
+
+**Errores:**
+
+| Código | Situación |
+| ------ | --------- |
+| 404 | No existe la función indicada. |
+| 409 | La función tiene reservas o facturas asociadas. |
+| 400 | Error no contemplado por las validaciones anteriores. |
+
+## 5.4. Consultar butacas de una función
 
 **GET `/api/funciones/{id}/butacas`**
 
@@ -1010,6 +1029,7 @@ Para el alcance actual del proyecto, las opciones pueden mantenerse definidas en
 | PUT    | `/api/peliculas/{id}/estado`              | Implementado       | Admin previsto      |
 | POST   | `/api/funciones`                          | Implementado       | Admin previsto      |
 | GET    | `/api/funciones`                          | Implementado       | Público             |
+| DELETE | `/api/Funciones/{id}`                     | Implementado       | Sin autorización actualmente |
 | GET    | `/api/funciones/{id}/butacas`             | Implementado       | Público             |
 | GET    | `/api/estadisticas/ingresos-por-mes`      | Implementado       | Admin previsto      |
 | GET    | `/api/estadisticas/top-peliculas`         | Implementado       | Admin previsto      |

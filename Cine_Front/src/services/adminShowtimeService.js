@@ -9,3 +9,7 @@ export async function createShowtime(showtime) {
   const { data } = await apiClient.post('/api/funciones', showtime)
   return data
 }
+
+export async function deleteShowtime(idFuncion) {
+  await apiClient.delete(`/api/Funciones/${idFuncion}`)
+}
